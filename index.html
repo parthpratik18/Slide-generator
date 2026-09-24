@@ -3,398 +3,373 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>News Slides Creator</title>
+<title>Professional Slides Creator</title>
 <style>
-* {margin:0;padding:0;box-sizing:border-box;}
-body {font-family:Arial,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px;}
-.container {max-width:1000px;margin:0 auto;}
-.header {text-align:center;color:white;margin-bottom:30px;}
-.header h1 {font-size:2.5em;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,0.2);}
-.header p {font-size:1.1em;opacity:0.95;}
-.card {background:white;border-radius:15px;padding:25px;box-shadow:0 10px 40px rgba(0,0,0,0.2);margin-bottom:30px;}
-.card h2 {color:#667eea;margin-bottom:20px;font-size:1.5em;}
-.input-group {margin-bottom:15px;}
-.input-group label {display:block;color:#555;font-weight:600;margin-bottom:8px;font-size:0.95em;}
-input[type="text"],textarea {width:100%;padding:12px 15px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;transition:all 0.3s;}
-input[type="text"]:focus,textarea:focus {outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1);}
-textarea {resize:vertical;min-height:100px;}
-button {width:100%;padding:12px 20px;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;transition:all 0.3s;margin-top:10px;}
-.btn-primary {background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;}
-.btn-primary:hover {transform:translateY(-2px);box-shadow:0 10px 25px rgba(102,126,234,0.4);}
-.status {padding:15px;border-radius:8px;margin-bottom:20px;display:none;}
-.status.success {background:#d4edda;color:#155724;border-left:4px solid #28a745;}
-.status.error {background:#f8d7da;color:#721c24;border-left:4px solid #f5222d;}
-.status.info {background:#d1ecf1;color:#0c5460;border-left:4px solid #17a2b8;}
-.format-selector {display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;}
-.format-btn {padding:12px;border:2px solid #e0e0e0;background:white;border-radius:8px;cursor:pointer;transition:all 0.3s;text-align:center;font-weight:600;color:#555;}
-.format-btn.active {border-color:#667eea;background:rgba(102,126,234,0.1);color:#667eea;}
-.slides-grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:15px;margin-top:20px;}
-.slide-item {position:relative;border-radius:8px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.1);cursor:pointer;transition:all 0.3s;}
-.slide-item:hover {transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,0.15);}
-.slide-item canvas {width:100%;height:100%;display:block;}
-.slide-label {position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);color:white;padding:5px;text-align:center;font-size:12px;font-weight:600;}
-.download-grid {display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px;}
-.btn-download {background:#28a745;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;transition:all 0.3s;}
-.btn-download:hover {background:#218838;transform:translateY(-2px);}
-.tabs {display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid #e0e0e0;}
-.tab-btn {padding:12px 20px;background:none;border:none;border-bottom:3px solid transparent;color:#555;font-weight:600;cursor:pointer;transition:all 0.3s;}
-.tab-btn.active {color:#667eea;border-bottom-color:#667eea;}
-.tab-content {display:none;}
-.tab-content.active {display:block;}
-.info-box {background:#e7f3ff;border-left:4px solid #2196F3;padding:15px;border-radius:6px;margin-bottom:15px;font-size:13px;color:#0c5460;}
-.channel-settings {background:#fff3cd;border-left:4px solid #ffc107;padding:15px;border-radius:6px;margin-bottom:15px;}
-.channel-settings h3 {color:#856404;margin-bottom:10px;}
-@media (max-width:600px) {.download-grid {grid-template-columns:1fr;}}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Arial,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px;}
+.container{max-width:1200px;margin:0 auto;}
+.header{text-align:center;color:white;margin-bottom:30px;}
+.header h1{font-size:2.5em;margin-bottom:10px;}
+.header p{font-size:1.1em;opacity:0.95;}
+.card{background:white;border-radius:15px;padding:25px;box-shadow:0 10px 40px rgba(0,0,0,0.2);margin-bottom:30px;}
+.card h2{color:#667eea;margin-bottom:20px;font-size:1.5em;}
+.input-group{margin-bottom:15px;}
+.input-group label{display:block;color:#555;font-weight:600;margin-bottom:8px;}
+input[type="text"],textarea,input[type="file"],select{width:100%;padding:12px 15px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;}
+input[type="file"]{padding:10px;}
+textarea{resize:vertical;min-height:80px;}
+button{width:100%;padding:12px 20px;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;transition:all 0.3s;margin-top:10px;}
+.btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(102,126,234,0.4);}
+.status{padding:15px;border-radius:8px;margin-bottom:20px;display:none;}
+.status.success{background:#d4edda;color:#155724;border-left:4px solid #28a745;}
+.status.error{background:#f8d7da;color:#721c24;border-left:4px solid #f5222d;}
+.info-box{background:#e7f3ff;border-left:4px solid #2196F3;padding:15px;border-radius:6px;margin-bottom:15px;font-size:13px;color:#0c5460;}
+.template-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;}
+.template-btn{padding:15px;border:2px solid #e0e0e0;background:white;border-radius:8px;cursor:pointer;text-align:center;font-weight:600;color:#555;transition:all 0.3s;}
+.template-btn.active{border-color:#667eea;background:rgba(102,126,234,0.1);color:#667eea;}
+.template-btn:hover{border-color:#667eea;}
+.format-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;}
+.format-btn{padding:12px;border:2px solid #e0e0e0;background:white;border-radius:8px;cursor:pointer;text-align:center;font-weight:600;color:#555;}
+.format-btn.active{border-color:#667eea;background:rgba(102,126,234,0.1);color:#667eea;}
+.slides-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:15px;margin-top:20px;}
+.slide-item{position:relative;border-radius:8px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.1);cursor:pointer;transition:all 0.3s;}
+.slide-item:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,0.15);}
+.slide-item canvas{width:100%;height:100%;display:block;}
+.slide-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);color:white;padding:5px;text-align:center;font-size:12px;font-weight:600;}
+.download-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px;}
+.btn-download{background:#28a745;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;}
+.btn-download:hover{background:#218838;}
+.tabs{display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid #e0e0e0;}
+.tab-btn{padding:12px 20px;background:none;border:none;border-bottom:3px solid transparent;color:#555;font-weight:600;cursor:pointer;}
+.tab-btn.active{color:#667eea;border-bottom-color:#667eea;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.image-preview{max-width:100%;max-height:200px;border-radius:8px;margin-top:10px;}
+.color-selector{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:15px;}
+.color-btn{padding:20px;border-radius:8px;border:3px solid #e0e0e0;cursor:pointer;transition:all 0.3s;}
+.color-btn.active{border-color:#333;transform:scale(1.05);}
+@media (max-width:600px){.template-selector,.format-selector,.download-grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
 <div class="container">
 <div class="header">
-<h1>News Slides Creator</h1>
-<p>Create beautiful YouTube and Instagram slides with your channel branding</p>
+<h1>Professional Slides Creator</h1>
+<p>Create Beautiful Slides with Multiple Templates</p>
 </div>
 
 <div class="card">
 <div class="tabs">
 <button class="tab-btn active" onclick="switchTab('settings')">Settings</button>
-<button class="tab-btn" onclick="switchTab('create')">Create Slides</button>
+<button class="tab-btn" onclick="switchTab('create')">Create</button>
 <button class="tab-btn" onclick="switchTab('preview')">Preview</button>
 <button class="tab-btn" onclick="switchTab('download')">Download</button>
 </div>
 
 <div id="settings" class="tab-content active">
-<div class="channel-settings">
-<h3>Configure Your Channel Branding</h3>
-<p style="color:#666;margin-bottom:15px;">Settings will appear on the first slide</p>
-</div>
-
-<div id="statusSettings"></div>
+<h2>Channel Settings</h2>
+<div class="info-box">Configure your channel branding for all slides</div>
 
 <div class="input-group">
-<label for="channelLogo">Channel Logo (Emoji)</label>
-<input type="text" id="channelLogo" placeholder="e.g. emoji" value="📰" maxlength="2">
+<label>Channel Logo (Emoji)</label>
+<input type="text" id="channelLogo" value="📰" maxlength="2">
 </div>
 
 <div class="input-group">
-<label for="channelName">Channel Name</label>
-<input type="text" id="channelName" placeholder="Channel Name" value="My News Channel">
+<label>Channel Name</label>
+<input type="text" id="channelName" value="My News Channel">
 </div>
 
 <div class="input-group">
-<label for="channelTagline">Channel Tagline</label>
-<input type="text" id="channelTagline" placeholder="Tagline" value="Daily News Updates">
-</div>
-
-<div class="input-group">
-<label for="subscribeText">Subscribe Button Text</label>
-<input type="text" id="subscribeText" placeholder="SUBSCRIBE NOW" value="SUBSCRIBE NOW">
-</div>
-
-<div class="input-group">
-<label for="followText">Follow Text</label>
-<input type="text" id="followText" placeholder="Follow text" value="Follow Us On">
+<label>Channel Tagline</label>
+<input type="text" id="channelTagline" value="Daily News Updates">
 </div>
 
 <button class="btn-primary" onclick="saveChannelSettings()">Save Settings</button>
 </div>
 
 <div id="create" class="tab-content">
-<div class="info-box">Enter news content. First slide will include your channel branding</div>
+<h2>Create Slides</h2>
+<div class="info-box">Choose template, add content, upload images and background</div>
 
 <div id="statusCreate"></div>
 
 <div class="input-group">
-<label for="headline">News Headline</label>
-<input type="text" id="headline" placeholder="Headline" value="Breaking News Alert">
+<label>Select Template Type</label>
+<div class="template-selector">
+<button class="template-btn active" onclick="setTemplate('breaking')">Breaking News</button>
+<button class="template-btn" onclick="setTemplate('vacancy')">Job Vacancy</button>
+<button class="template-btn" onclick="setTemplate('article')">Article/Blog</button>
+<button class="template-btn" onclick="setTemplate('event')">Event/Announcement</button>
+</div>
 </div>
 
 <div class="input-group">
-<label for="keyPoints">Key Points (one per line)</label>
-<textarea id="keyPoints">Latest technology news
-New AI discoveries
-Global market trends
-Expert analysis
-Today's updates</textarea>
+<label>Select Design Color</label>
+<div class="color-selector">
+<button class="color-btn active" onclick="setColor('#667eea','#764ba2')" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);"></button>
+<button class="color-btn" onclick="setColor('#f093fb','#f5576c')" style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);"></button>
+<button class="color-btn" onclick="setColor('#4facfe','#00f2fe')" style="background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);"></button>
+<button class="color-btn" onclick="setColor('#43e97b','#38f9d7')" style="background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%);"></button>
+<button class="color-btn" onclick="setColor('#fa709a','#fee140')" style="background:linear-gradient(135deg,#fa709a 0%,#fee140 100%);"></button>
+</div>
 </div>
 
 <div class="input-group">
-<label for="summary">Summary</label>
-<textarea id="summary">Stay informed with latest news. Comprehensive overview of today headlines.</textarea>
+<label>Background Image (Optional)</label>
+<input type="file" id="backgroundImage" accept="image/*" onchange="previewBackground()">
+<img id="bgPreview" class="image-preview" style="display:none;">
+</div>
+
+<div class="input-group">
+<label>Add Image to Slide (Optional)</label>
+<input type="file" id="contentImage" accept="image/*" onchange="previewContentImage()">
+<img id="contentImgPreview" class="image-preview" style="display:none;">
+</div>
+
+<div class="input-group">
+<label>Headline/Title</label>
+<input type="text" id="headline" placeholder="Enter main headline" value="Breaking News">
+</div>
+
+<div class="input-group">
+<label>Description/Content</label>
+<textarea id="content" placeholder="Paste news content or write description">Paste your news content here or describe the job vacancy or announcement</textarea>
+</div>
+
+<div class="input-group">
+<label>Additional Details (Optional)</label>
+<textarea id="details" placeholder="Extra info, link, contact, etc" style="min-height:60px;"></textarea>
 </div>
 
 <div class="input-group">
 <label>Choose Format</label>
 <div class="format-selector">
-<button class="format-btn active" onclick="setFormat('instagram')">Instagram Story - 1080x1920</button>
+<button class="format-btn active" onclick="setFormat('instagram')">Instagram - 1080x1920</button>
 <button class="format-btn" onclick="setFormat('youtube')">YouTube - 1280x720</button>
 </div>
 </div>
 
-<button class="btn-primary" onclick="generateSlides()">Generate Slides Now</button>
+<button class="btn-primary" onclick="generateSlides()">Generate Slides</button>
 </div>
 
 <div id="preview" class="tab-content">
+<h2>Preview Slides</h2>
 <div class="info-box">Click any slide to download it</div>
-<div id="previewContent"><p style="color:#999;text-align:center;padding:40px;">Generate slides first to see preview</p></div>
+<div id="previewContent"><p style="color:#999;text-align:center;padding:40px;">Generate slides first</p></div>
 </div>
 
 <div id="download" class="tab-content">
-<div class="info-box">Download your slides as PNG files</div>
-<div id="downloadContent"><p style="color:#999;text-align:center;padding:40px;">Generate slides first to download</p></div>
+<h2>Download Slides</h2>
+<div class="info-box">Download all your slides as PNG files</div>
+<div id="downloadContent"><p style="color:#999;text-align:center;padding:40px;">Generate slides first</p></div>
 </div>
 </div>
 </div>
 
 <script>
-var generatedSlides = [];
+var selectedTemplate = 'breaking';
 var selectedFormat = 'instagram';
-var channelSettings = {
-logo: '📰',
-name: 'My News Channel',
-tagline: 'Daily News Updates',
-subscribeText: 'SUBSCRIBE NOW',
-followText: 'Follow Us On'
-};
+var selectedColorStart = '#667eea';
+var selectedColorEnd = '#764ba2';
+var generatedSlides = [];
+var backgroundImage = null;
+var contentImage = null;
+var channelSettings = {logo:'📰',name:'My News Channel',tagline:'Daily News Updates'};
 
-var colors = [
-{start:'#667eea',end:'#764ba2'},
-{start:'#f093fb',end:'#f5576c'},
-{start:'#4facfe',end:'#00f2fe'},
-{start:'#43e97b',end:'#38f9d7'},
-{start:'#fa709a',end:'#fee140'}
-];
+function setTemplate(t){selectedTemplate=t;var btns=document.querySelectorAll('.template-btn');for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');event.target.classList.add('active');}
+function setFormat(f){selectedFormat=f;var btns=document.querySelectorAll('.format-btn');for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');event.target.classList.add('active');}
+function setColor(s,e){selectedColorStart=s;selectedColorEnd=e;var btns=document.querySelectorAll('.color-btn');for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');event.target.classList.add('active');}
+function switchTab(t){var c=document.querySelectorAll('.tab-content');for(var i=0;i<c.length;i++)c[i].classList.remove('active');var b=document.querySelectorAll('.tab-btn');for(var i=0;i<b.length;i++)b[i].classList.remove('active');document.getElementById(t).classList.add('active');event.target.classList.add('active');}
+function saveChannelSettings(){channelSettings.logo=document.getElementById('channelLogo').value||'📰';channelSettings.name=document.getElementById('channelName').value||'My News Channel';channelSettings.tagline=document.getElementById('channelTagline').value||'Daily News Updates';showStatus('Settings saved','success');}
+function previewBackground(){var f=document.getElementById('backgroundImage').files[0];if(!f)return;var r=new FileReader();r.onload=function(e){backgroundImage=e.target.result;document.getElementById('bgPreview').src=backgroundImage;document.getElementById('bgPreview').style.display='block';};r.readAsDataURL(f);}
+function previewContentImage(){var f=document.getElementById('contentImage').files[0];if(!f)return;var r=new FileReader();r.onload=function(e){contentImage=e.target.result;document.getElementById('contentImgPreview').src=contentImage;document.getElementById('contentImgPreview').style.display='block';};r.readAsDataURL(f);}
+function showStatus(m,t){var s=document.getElementById('statusCreate');s.className='status '+t;s.textContent=m;s.style.display='block';setTimeout(function(){s.style.display='none';},5000);}
 
-function saveChannelSettings() {
-channelSettings.logo = document.getElementById('channelLogo').value || '📰';
-channelSettings.name = document.getElementById('channelName').value || 'My News Channel';
-channelSettings.tagline = document.getElementById('channelTagline').value || 'Daily News Updates';
-channelSettings.subscribeText = document.getElementById('subscribeText').value || 'SUBSCRIBE NOW';
-channelSettings.followText = document.getElementById('followText').value || 'Follow Us On';
-showStatus('Settings saved successfully','success','statusSettings');
-}
+function generateSlides(){
+var headline=document.getElementById('headline').value.trim();
+var content=document.getElementById('content').value.trim();
+var details=document.getElementById('details').value.trim();
 
-function setFormat(format) {
-selectedFormat = format;
-var btns = document.querySelectorAll('.format-btn');
-for(var i=0;i<btns.length;i++) btns[i].classList.remove('active');
-event.target.classList.add('active');
-}
-
-function switchTab(tab) {
-var contents = document.querySelectorAll('.tab-content');
-for(var i=0;i<contents.length;i++) contents[i].classList.remove('active');
-var btns = document.querySelectorAll('.tab-btn');
-for(var i=0;i<btns.length;i++) btns[i].classList.remove('active');
-document.getElementById(tab).classList.add('active');
-event.target.classList.add('active');
-}
-
-function showStatus(msg,type,elemId) {
-elemId = elemId || 'statusCreate';
-var st = document.getElementById(elemId);
-st.className = 'status '+type;
-st.textContent = msg;
-st.style.display = 'block';
-setTimeout(function(){st.style.display='none';},5000);
-}
-
-function generateSlides() {
-var headline = document.getElementById('headline').value.trim();
-var keyPointsText = document.getElementById('keyPoints').value.trim();
-var summary = document.getElementById('summary').value.trim();
-
-if(!headline || !keyPointsText) {
-showStatus('Fill in headline and key points','error');
-return;
-}
-
-var keyPoints = keyPointsText.split('\n').filter(function(p){return p.trim();}).slice(0,5);
+if(!headline||!content){showStatus('Fill headline and content','error');return;}
 
 showStatus('Generating slides...','info');
-generatedSlides = [];
+generatedSlides=[];
 
 setTimeout(function(){
-generatedSlides.push({
-type:'channel',
-title:channelSettings.name,
-tagline:channelSettings.tagline,
-logo:channelSettings.logo,
-subscribeText:channelSettings.subscribeText,
-followText:channelSettings.followText,
-color:colors[0]
-});
-
-keyPoints.slice(0,3).forEach(function(point,index){
-generatedSlides.push({
-type:'content',
-title:'Key Point '+(index+1),
-content:point,
-color:colors[index+1]
-});
-});
-
-generatedSlides.push({
-type:'content',
-title:'Summary',
-content:summary || 'Stay tuned for updates',
-color:colors[4]
-});
-
+generatedSlides.push({type:'channel',title:channelSettings.name,tagline:channelSettings.tagline,logo:channelSettings.logo});
+generatedSlides.push({type:'content',template:selectedTemplate,title:headline,content:content,details:details});
 displaySlides();
-showStatus('Slides generated. First slide has your branding','success');
+showStatus('Slides generated','success');
 switchTab('preview');
 },500);
 }
 
-function displaySlides() {
-var previewContent = document.getElementById('previewContent');
-var downloadContent = document.getElementById('downloadContent');
+function displaySlides(){
+var previewContent=document.getElementById('previewContent');
+var downloadContent=document.getElementById('downloadContent');
 
-var slidesHTML = '<div class="slides-grid">';
-for(var i=0;i<generatedSlides.length;i++) {
-slidesHTML += '<div class="slide-item" onclick="downloadSlide('+i+')"><canvas id="canvas-'+i+'" style="width:100%;height:auto;"></canvas><div class="slide-label">Slide '+(i+1)+'/'+generatedSlides.length+'</div></div>';
-}
-slidesHTML += '</div><p style="text-align:center;margin-top:20px;color:#666;font-size:14px;">Click any slide to download</p>';
-previewContent.innerHTML = slidesHTML;
+var html='<div class="slides-grid">';
+for(var i=0;i<generatedSlides.length;i++){html+='<div class="slide-item" onclick="downloadSlide('+i+')"><canvas id="canvas-'+i+'"></canvas><div class="slide-label">Slide '+(i+1)+'</div></div>';}
+html+='</div>';
+previewContent.innerHTML=html;
 
-var downloadHTML = '<div class="download-grid">';
-for(var i=0;i<generatedSlides.length;i++) {
-downloadHTML += '<button class="btn-download" onclick="downloadSlide('+i+')">Download Slide '+(i+1)+'</button>';
-}
-downloadHTML += '</div>';
-downloadContent.innerHTML = downloadHTML;
+var dlhtml='<div class="download-grid">';
+for(var i=0;i<generatedSlides.length;i++){dlhtml+='<button class="btn-download" onclick="downloadSlide('+i+')">Slide '+(i+1)+'</button>';}
+dlhtml+='</div>';
+downloadContent.innerHTML=dlhtml;
 
-for(var i=0;i<generatedSlides.length;i++) {
-drawSlide(i,generatedSlides[i]);
-}
+for(var i=0;i<generatedSlides.length;i++){drawSlide(i,generatedSlides[i]);}
 }
 
-function drawSlide(index,slide) {
-var canvas = document.getElementById('canvas-'+index);
-if(!canvas) return;
+function drawSlide(index,slide){
+var canvas=document.getElementById('canvas-'+index);
+var w=selectedFormat==='instagram'?1080:1280;
+var h=selectedFormat==='instagram'?1920:720;
+canvas.width=w;
+canvas.height=h;
+var ctx=canvas.getContext('2d');
 
-var width = selectedFormat === 'instagram' ? 1080 : 1280;
-var height = selectedFormat === 'instagram' ? 1920 : 720;
+var gradient=ctx.createLinearGradient(0,0,w,h);
+gradient.addColorStop(0,selectedColorStart);
+gradient.addColorStop(1,selectedColorEnd);
 
-canvas.width = width;
-canvas.height = height;
-
-var ctx = canvas.getContext('2d');
-
-var gradient = ctx.createLinearGradient(0,0,width,height);
-gradient.addColorStop(0,slide.color.start);
-gradient.addColorStop(1,slide.color.end);
-
-ctx.fillStyle = gradient;
-ctx.fillRect(0,0,width,height);
-
-if(slide.type === 'channel') {
-drawChannelSlide(ctx,width,height,slide);
-} else {
-drawContentSlide(ctx,width,height,slide);
+if(backgroundImage){
+var img=new Image();
+img.onload=function(){ctx.drawImage(img,0,0,w,h);ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(0,0,w,h);drawSlideContent(ctx,w,h,slide);};
+img.src=backgroundImage;
+}else{
+ctx.fillStyle=gradient;
+ctx.fillRect(0,0,w,h);
+drawSlideContent(ctx,w,h,slide);
 }
 }
 
-function drawChannelSlide(ctx,width,height,slide) {
-ctx.font = (width > 800 ? 120 : 80)+'px Arial';
-ctx.textAlign = 'center';
-ctx.textBaseline = 'middle';
-ctx.fillStyle = 'white';
-ctx.fillText(slide.logo,width/2,height/3);
-
-ctx.font = 'bold '+(width > 800 ? 80 : 60)+'px Arial';
-ctx.fillStyle = 'white';
-ctx.fillText(slide.title,width/2,height/2.2);
-
-ctx.font = (width > 800 ? 40 : 30)+'px Arial';
-ctx.fillStyle = 'rgba(255,255,255,0.9)';
-ctx.fillText(slide.tagline,width/2,height/1.7);
-
-var btnY = height/1.3;
-ctx.fillStyle = 'rgba(255,255,255,0.2)';
-ctx.fillRect(width/2-250,btnY-40,500,80);
-ctx.strokeStyle = 'white';
-ctx.lineWidth = 3;
-ctx.strokeRect(width/2-250,btnY-40,500,80);
-
-ctx.font = 'bold '+(width > 800 ? 50 : 35)+'px Arial';
-ctx.fillStyle = 'white';
-ctx.textAlign = 'center';
-ctx.fillText('SUBSCRIBE '+slide.subscribeText.split(' ')[1],width/2,btnY+10);
-
-ctx.font = (width > 800 ? 35 : 25)+'px Arial';
-ctx.fillStyle = 'rgba(255,255,255,0.95)';
-ctx.fillText(slide.followText,width/2,height-200);
-
-ctx.font = (width > 800 ? 50 : 40)+'px Arial';
-var icons = ['PLAY','IMG','TWIT','TIKTOK'];
-var iconY = height-100;
-var iconSpacing = width/5;
-var startX = width/2-(iconSpacing*1.5);
-
-for(var i=0;i<icons.length;i++) {
-ctx.fillText(icons[i],startX+(i*iconSpacing),iconY);
+function drawSlideContent(ctx,w,h,slide){
+if(slide.type==='channel'){
+drawChannelSlide(ctx,w,h,slide);
+}else if(slide.type==='content'){
+if(slide.template==='breaking'){drawBreakingNews(ctx,w,h,slide);}
+else if(slide.template==='vacancy'){drawJobVacancy(ctx,w,h,slide);}
+else if(slide.template==='article'){drawArticle(ctx,w,h,slide);}
+else if(slide.template==='event'){drawEvent(ctx,w,h,slide);}
 }
 }
 
-function drawContentSlide(ctx,width,height,slide) {
-ctx.fillStyle = 'white';
-ctx.font = 'bold '+(width > 800 ? 70 : 50)+'px Arial';
-ctx.textAlign = 'center';
-ctx.textBaseline = 'top';
-
-var titleY = height/4;
-ctx.fillText(slide.title,width/2,titleY);
-
-ctx.font = (width > 800 ? 50 : 35)+'px Arial';
-var words = slide.content.split(' ');
-var lines = wrapText(words,width-100,ctx);
-var contentY = height/2-(lines.length*60)/2;
-
-for(var i=0;i<lines.length;i++) {
-ctx.fillText(lines[i],width/2,contentY+(i*60));
+function drawChannelSlide(ctx,w,h,slide){
+ctx.font='bold '+(w>800?80:60)+'px Arial';
+ctx.textAlign='center';
+ctx.textBaseline='top';
+ctx.fillStyle='white';
+ctx.fillText(slide.logo,w/2,h/3);
+ctx.font='bold '+(w>800?70:50)+'px Arial';
+ctx.fillText(slide.title,w/2,h/2);
+ctx.font=(w>800?40:30)+'px Arial';
+ctx.fillStyle='rgba(255,255,255,0.9)';
+ctx.fillText(slide.tagline,w/2,h/1.5);
 }
 
-ctx.font = (width > 800 ? 30 : 20)+'px Arial';
-ctx.fillStyle = 'rgba(255,255,255,0.7)';
-ctx.textAlign = 'right';
-ctx.fillText(generatedSlides.length,width-30,height-50);
+function drawBreakingNews(ctx,w,h,slide){
+ctx.fillStyle='rgba(255,0,0,0.8)';
+ctx.fillRect(0,0,w,100);
+ctx.font='bold '+(w>800?50:35)+'px Arial';
+ctx.fillStyle='white';
+ctx.textAlign='left';
+ctx.fillText('BREAKING NEWS',20,60);
+
+ctx.font='bold '+(w>800?60:40)+'px Arial';
+ctx.textAlign='center';
+ctx.fillStyle='white';
+var titleLines=wrapText(slide.title.split(' '),w-80,ctx);
+var titleY=h/4;
+for(var i=0;i<titleLines.length;i++){ctx.fillText(titleLines[i],w/2,titleY+(i*60));}
+
+ctx.font=(w>800?35:25)+'px Arial';
+var contentLines=wrapText(slide.content.split(' '),w-80,ctx);
+var contentY=h/2;
+for(var i=0;i<contentLines.length&&i<3;i++){ctx.fillText(contentLines[i],w/2,contentY+(i*50));}
 }
 
-function wrapText(words,maxWidth,ctx) {
-var lines = [];
-var currentLine = '';
+function drawJobVacancy(ctx,w,h,slide){
+ctx.fillStyle='rgba(76,175,80,0.9)';
+ctx.fillRect(0,0,w,120);
+ctx.font='bold '+(w>800?50:35)+'px Arial';
+ctx.fillStyle='white';
+ctx.textAlign='center';
+ctx.fillText('JOB VACANCY',w/2,70);
 
-for(var i=0;i<words.length;i++) {
-var word = words[i];
-var testLine = currentLine + (currentLine ? ' ' : '') + word;
-var metrics = ctx.measureText(testLine);
+ctx.font='bold '+(w>800?50:40)+'px Arial';
+ctx.fillStyle='white';
+ctx.textAlign='center';
+ctx.fillText(slide.title,w/2,h/2.5);
 
-if(metrics.width > maxWidth && currentLine) {
-lines.push(currentLine);
-currentLine = word;
-} else {
-currentLine = testLine;
+ctx.font=(w>800?35:25)+'px Arial';
+ctx.fillStyle='white';
+var lines=wrapText(slide.content.split(' '),w-80,ctx);
+var startY=h/1.8;
+for(var i=0;i<lines.length&&i<4;i++){ctx.fillText(lines[i],w/2,startY+(i*50));}
+
+if(slide.details){
+ctx.font='bold '+(w>800?30:20)+'px Arial';
+ctx.fillStyle='rgba(255,255,0,0.95)';
+ctx.fillText('Details: '+slide.details.substring(0,30),w/2,h-80);
 }
 }
 
-if(currentLine) lines.push(currentLine);
+function drawArticle(ctx,w,h,slide){
+ctx.font='bold '+(w>800?60:45)+'px Arial';
+ctx.fillStyle='white';
+ctx.textAlign='center';
+var titleLines=wrapText(slide.title.split(' '),w-60,ctx);
+var titleY=h/5;
+for(var i=0;i<titleLines.length;i++){ctx.fillText(titleLines[i],w/2,titleY+(i*70));}
+
+ctx.font=(w>800?40:28)+'px Arial';
+ctx.fillStyle='rgba(255,255,255,0.95)';
+var contentLines=wrapText(slide.content.split(' '),w-80,ctx);
+var contentY=h/2.2;
+for(var i=0;i<contentLines.length&&i<4;i++){ctx.fillText(contentLines[i],w/2,contentY+(i*50));}
+}
+
+function drawEvent(ctx,w,h,slide){
+ctx.fillStyle='rgba(156,39,176,0.85)';
+ctx.fillRect(0,0,w,100);
+ctx.font='bold '+(w>800?45:35)+'px Arial';
+ctx.fillStyle='white';
+ctx.textAlign='center';
+ctx.fillText('EVENT ANNOUNCEMENT',w/2,60);
+
+ctx.font='bold '+(w>800?55:40)+'px Arial';
+ctx.fillStyle='white';
+ctx.fillText(slide.title,w/2,h/2.5);
+
+ctx.font=(w>800?40:28)+'px Arial';
+ctx.fillStyle='rgba(255,255,255,0.9)';
+var lines=wrapText(slide.content.split(' '),w-80,ctx);
+var startY=h/1.8;
+for(var i=0;i<lines.length&&i<3;i++){ctx.fillText(lines[i],w/2,startY+(i*50));}
+}
+
+function wrapText(words,maxW,ctx){
+var lines=[];
+var line='';
+for(var i=0;i<words.length;i++){
+var test=line+(line?' ':'')+words[i];
+var m=ctx.measureText(test);
+if(m.width>maxW&&line){lines.push(line);line=words[i];}else{line=test;}
+}
+if(line)lines.push(line);
 return lines;
 }
 
-function downloadSlide(index) {
-var canvas = document.getElementById('canvas-'+index);
-if(!canvas) return;
-
-var link = document.createElement('a');
-link.href = canvas.toDataURL('image/png');
-link.download = 'slide-'+(index+1)+'-'+selectedFormat+'.png';
+function downloadSlide(index){
+var canvas=document.getElementById('canvas-'+index);
+var link=document.createElement('a');
+link.href=canvas.toDataURL('image/png');
+link.download='slide-'+(index+1)+'-'+selectedTemplate+'.png';
 link.click();
 }
-
-window.addEventListener('load',function(){
-setTimeout(function(){generateSlides();},500);
-});
 </script>
 </body>
 </html>
