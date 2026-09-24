@@ -662,5 +662,180 @@ setup();motionV2()
 })();
 </script>
 
+
+<style id="totProFix">
+#previewContent .slides-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:22px}
+#previewContent .slide-item{background:#fff;border-radius:14px;overflow:hidden}
+#previewContent .slide-item canvas{width:100%;height:auto;display:block}
+.tot-story-pills{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0 15px}
+.tot-story-pill{padding:14px 10px;border:2px solid #e5e7eb;border-radius:10px;background:#fff;font-weight:800;cursor:pointer}
+.tot-story-pill.active{border-color:#111827;background:#f3f4f6}
+@media(max-width:700px){.tot-story-pills{grid-template-columns:1fr 1fr}}
+</style>
+<script>
+(function(){
+  function E(id){return document.getElementById(id)}
+  function addControls(){
+    var m=E('manual'); if(!m||E('totStoryControls')) return;
+    var box=document.createElement('div');box.id='totStoryControls';box.className='input-group';
+    box.innerHTML='<label>Choose Slide Style</label><div class="tot-story-pills">'+
+      '<button type="button" class="tot-story-pill active" data-type="breaking">🚨 Breaking News</button>'+
+      '<button type="button" class="tot-story-pill" data-type="jobs">💼 Job Vacancy</button>'+
+      '<button type="button" class="tot-story-pill" data-type="facts">💡 Facts</button>'+
+      '<button type="button" class="tot-story-pill" data-type="story">📰 News Story</button>'+
+      '</div>';
+    var first=m.querySelector('.info-box'); if(first) first.after(box); else m.prepend(box);
+    box.querySelectorAll('.tot-story-pill').forEach(function(b){b.onclick=function(){
+      box.querySelectorAll('.tot-story-pill').forEach(function(x){x.classList.remove('active')});b.classList.add('active');
+      window.totStoryType=b.dataset.type;
+    }});
+    window.totStoryType='breaking';
+    var name=E('manualChannelName'); if(name) name.value=name.value==='My News Channel'?'Top Of Trends India':name.value;
+    var btn=m.querySelector('button.btn-primary[onclick*="generateFromManual"]'); if(btn){btn.textContent='Generate Professional Slides';btn.onclick=function(){generateFromManualV2()}}
+  }
+
+  function theme(){
+    var t=window.totStoryType||'breaking';
+    if(t==='jobs')return {bg:'#ffffff',fg:'#111827',muted:'#64748b',accent:'#16a34a',accent2:'#0f766e',tag:'JOB VACANCY',cta:'FOLLOW FOR DAILY JOB UPDATES'};
+    if(t==='facts')return {bg:'#f8fafc',fg:'#111827',muted:'#475569',accent:'#f59e0b',accent2:'#ea580c',tag:'FACTS',cta:'FOLLOW FOR MORE FACTS'};
+    if(t==='story')return {bg:'#ffffff',fg:'#111827',muted:'#475569',accent:'#2563eb',accent2:'#1d4ed8',tag:'NEWS STORY',cta:'SUBSCRIBE • FOLLOW • SHARE'};
+    return {bg:'#05070b',fg:'#ffffff',muted:'#cbd5e1',accent:'#ef233c',accent2:'#b91c1c',tag:'BREAKING NEWS',cta:'SUBSCRIBE • FOLLOW • SHARE'};
+  }
+
+  function round(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+  function wrap(c,s,maxW,maxLines){var a=String(s||'').replace(/\s+/g,' ').trim().split(' '),out=[],line='';for(var i=0;i<a.length;i++){var z=line?line+' '+a[i]:a[i];if(c.measureText(z).width>maxW&&line){out.push(line);line=a[i];if(out.length>=maxLines-1)break}else line=z}if(line&&out.length<maxLines)out.push(line);return out}
+  function fit(c,s,max,start,min){for(var z=start;z>=min;z-=2){c.font='900 '+z+'px Arial';if(c.measureText(s).width<=max)return z}return min}
+  function cover(c,img,x,y,w,h){if(!img)return;var r=img.width/img.height,b=w/h,sw=img.width,sh=img.height,sx=0,sy=0;if(r>b){sw=img.height*b;sx=(img.width-sw)/2}else{sh=img.width/b;sy=(img.height-sh)/2}c.drawImage(img,sx,sy,sw,sh,x,y,w,h)}
+  function maskedImage(c,img,x,y,w,h,r){if(!img)return false;c.save();round(c,x,y,w,h,r);c.clip();cover(c,img,x,y,w,h);c.restore();return true}
+
+  function drawSiren(c,x,y,s){
+    c.save();c.translate(x,y);c.fillStyle='#ef233c';c.beginPath();c.roundRect(-s*.42,-s*.12,s*.84,s*.38,s*.06);c.fill();
+    c.fillStyle='#b91c1c';c.beginPath();c.moveTo(-s*.28,-s*.12);c.quadraticCurveTo(-s*.2,-s*.5,0,-s*.52);c.quadraticCurveTo(s*.2,-s*.5,s*.28,-s*.12);c.closePath();c.fill();
+    c.fillStyle='#fca5a5';c.beginPath();c.arc(0,-s*.3,s*.08,0,Math.PI*2);c.fill();
+    c.fillStyle='#475569';c.fillRect(-s*.5,s*.24,s,s*.08);
+    c.strokeStyle='#ef233c';c.lineWidth=s*.045;
+    [[-s*.58,-s*.25,-s*.78,-s*.4],[s*.58,-s*.25,s*.78,-s*.4],[-s*.62,0,-s*.86,0],[s*.62,0,s*.86,0]].forEach(function(a){c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(a[2],a[3]);c.stroke()});c.restore();
+  }
+
+  function stickman(c,x,y,s,pose){
+    c.save();c.translate(x,y);c.strokeStyle='#111827';c.fillStyle='#111827';c.lineWidth=Math.max(4,s*.035);c.lineCap='round';
+    c.beginPath();c.arc(0,-s*.38,s*.13,0,Math.PI*2);c.stroke();
+    c.beginPath();c.moveTo(0,-s*.25);c.lineTo(0,s*.12);c.stroke();
+    c.beginPath();c.moveTo(0,-s*.16);c.lineTo(-s*.23,s*.02);c.moveTo(0,-s*.16);c.lineTo(s*.23,s*.02);c.stroke();
+    c.beginPath();c.moveTo(0,s*.12);c.lineTo(-s*.18,s*.38);c.moveTo(0,s*.12);c.lineTo(s*.18,s*.38);c.stroke();
+    if(pose==='job'){c.fillStyle='#16a34a';c.fillRect(-s*.18,-s*.18,s*.36,s*.28)}
+    c.restore();
+  }
+
+  function footer(c,w,h,th,channel){
+    var fh=Math.max(68,h*.075),y=h-fh;c.fillStyle=th.bg==='#ffffff'?'#111827':'#080b12';c.fillRect(0,y,w,fh);
+    c.fillStyle=th.accent;c.fillRect(0,y,w*.18,5);c.fillStyle='#fff';c.font='900 '+Math.max(13,w*.015)+'px Arial';c.textAlign='left';c.textBaseline='middle';c.fillText(th.cta,Math.max(28,w*.045),y+fh*.55);
+    c.fillStyle='#cbd5e1';c.font='700 '+Math.max(10,w*.011)+'px Arial';c.textAlign='right';c.fillText(channel.toUpperCase(),w-Math.max(28,w*.045),y+fh*.55);c.textAlign='left';
+  }
+
+  function render(cv,i,total,p){
+    var c=cv.getContext('2d'),w=cv.width,h=cv.height,th=theme(),channel=(E('manualChannelName')&&E('manualChannelName').value)||'Top Of Trends India';
+    var title=p.title||'Latest Update',txt=p.text||p.content||'',pad=Math.max(40,w*.055),top=Math.max(82,w*.075);
+    c.clearRect(0,0,w,h);c.fillStyle=th.bg;c.fillRect(0,0,w,h);
+
+    // HEADER: channel always top-left
+    c.fillStyle=th.bg==='#ffffff'?'#fff':'#05070b';c.fillRect(0,0,w,top);
+    c.fillStyle=th.accent;c.fillRect(0,0,7,top);
+    c.fillStyle=th.fg;c.font='900 '+Math.max(17,w*.021)+'px Arial';c.textBaseline='middle';c.fillText(channel.toUpperCase(),pad,top*.52);
+    c.fillStyle=th.muted;c.font='700 '+Math.max(10,w*.011)+'px Arial';c.textAlign='right';c.fillText((i+1)+' / '+total,w-pad,top*.52);c.textAlign='left';
+
+    var y=top+pad;
+
+    if(window.totStoryType==='breaking'){
+      // BLACK + RED + SIREN + MASKED USER IMAGE
+      c.fillStyle=th.accent;c.fillRect(pad,y,w-pad*2,7);
+      c.fillStyle=th.accent;c.font='900 '+Math.max(14,w*.017)+'px Arial';c.fillText('🚨 BREAKING NEWS',pad,y+38);
+      drawSiren(c,w-pad*1.7,y+Math.min(90,w*.09),Math.min(90,w*.09));
+      var ih=h*.38,iw=w-pad*2,iy=y+75;
+      if(window.totBg)maskedImage(c,window.totBg,pad,iy,iw,ih,28);else{c.fillStyle='#151922';round(c,pad,iy,iw,ih,28);c.fill()}
+      c.fillStyle='#000';c.globalAlpha=.45;c.fillRect(pad,iy,iw,ih);c.globalAlpha=1;
+      c.fillStyle='#fff';c.font='900 '+fit(c,title,iw-50,Math.min(70,w*.07),26)+'px Arial';
+      wrap(c,title,iw-50,4).forEach(function(s,n){c.fillText(s,pad+25,iy+ih+55+n*Math.min(70,w*.068))});
+      c.fillStyle='#cbd5e1';c.font='500 '+Math.max(17,w*.021)+'px Arial';
+      var by=iy+ih+75+wrap(c,title,iw-50,4).length*Math.min(70,w*.068);
+      wrap(c,txt,iw-50,4).forEach(function(s,n){c.fillText(s,pad+25,by+n*Math.max(28,w*.03))});
+    }
+    else if(window.totStoryType==='jobs'){
+      // CLEAN JOB CARDS + STICKMAN
+      c.fillStyle=th.accent;c.font='900 '+Math.max(15,w*.018)+'px Arial';c.fillText('JOB VACANCY',pad,y+20);
+      c.fillStyle=th.fg;c.font='900 '+fit(c,title,w*.72,Math.min(70,w*.07),26)+'px Arial';
+      wrap(c,title,w*.72,4).forEach(function(s,n){c.fillText(s,pad,y+100+n*Math.min(70,w*.07))});
+      stickman(c,w-pad*1.8,y+105,Math.min(190,w*.17),'job');
+      var cards=['POST / VACANCY','ELIGIBILITY','IMPORTANT DATE','HOW TO APPLY'];
+      var yy=y+h*.29;
+      cards.forEach(function(label,n){
+        var val=(txt.split(/\n|•|\|/)[n]||txt).trim();
+        c.fillStyle=n%2===0?'#f1f5f9':'#ffffff';round(c,pad,yy,w-pad*2,Math.min(150,h*.115),18);c.fill();
+        c.strokeStyle='#e2e8f0';c.lineWidth=2;c.stroke();
+        c.fillStyle=th.accent;c.font='900 '+Math.max(11,w*.013)+'px Arial';c.fillText(label,pad+24,yy+30);
+        c.fillStyle=th.fg;c.font='700 '+Math.max(15,w*.018)+'px Arial';
+        wrap(c,val,w-pad*2-48,2).forEach(function(s,k){c.fillText(s,pad+24,yy+68+k*Math.max(25,w*.027))});
+        yy+=Math.min(170,h*.13);
+      });
+      stickman(c,w-pad*1.35,h*.73,Math.min(150,w*.14),'job');
+    }
+    else if(window.totStoryType==='facts'){
+      // FACT / EXPLAINER
+      c.fillStyle=th.accent;c.font='900 '+Math.max(15,w*.018)+'px Arial';c.fillText('DID YOU KNOW?',pad,y+20);
+      var num=p.number||String(i+1).padStart(2,'0');
+      c.fillStyle=th.accent;c.font='900 '+Math.min(h*.27,w*.30)+'px Arial';c.fillText(num,pad,y+h*.23);
+      c.fillStyle=th.fg;c.font='900 '+fit(c,title,w-pad*2,Math.min(64,w*.064),24)+'px Arial';
+      wrap(c,title,w-pad*2,4).forEach(function(s,n){c.fillText(s,pad,y+h*.30+n*Math.min(64,w*.062))});
+      c.fillStyle=th.muted;c.font='500 '+Math.max(17,w*.021)+'px Arial';
+      wrap(c,txt,w-pad*2,6).forEach(function(s,n){c.fillText(s,pad,y+h*.54+n*Math.max(28,w*.03))});
+      // simple 2D decorative circles
+      c.strokeStyle=th.accent;c.lineWidth=5;c.beginPath();c.arc(w-pad*1.5,y+h*.22,45,0,Math.PI*1.5);c.stroke();
+      c.beginPath();c.arc(w-pad*1.5,y+h*.22,65,0,Math.PI*.9);c.stroke();
+    }
+    else {
+      // NEWS STORY: CLEAN EDITORIAL
+      var ih=h*.36,iw=w-pad*2;
+      if(window.totBg)maskedImage(c,window.totBg,pad,y,iw,ih,22);else{var g=c.createLinearGradient(pad,y,w-pad,y+ih);g.addColorStop(0,'#dbeafe');g.addColorStop(1,'#eff6ff');c.fillStyle=g;round(c,pad,y,iw,ih,22);c.fill()}
+      c.fillStyle=th.accent;c.fillRect(pad,y+ih-42,Math.min(230,w*.22),42);c.fillStyle='#fff';c.font='900 '+Math.max(11,w*.013)+'px Arial';c.textBaseline='middle';c.fillText('NEWS STORY',pad+16,y+ih-21);
+      c.textBaseline='alphabetic';c.fillStyle=th.fg;c.font='900 '+fit(c,title,iw,Math.min(66,w*.065),25);
+      var tl=wrap(c,title,iw,4);tl.forEach(function(s,n){c.fillText(s,pad,y+ih+58+n*Math.min(66,w*.065))});
+      c.fillStyle=th.muted;c.font='500 '+Math.max(17,w*.02)+'px Arial';var by=y+ih+85+tl.length*Math.min(66,w*.065);
+      wrap(c,txt,iw,5).forEach(function(s,n){c.fillText(s,pad,by+n*Math.max(27,w*.029))});
+    }
+    footer(c,w,h,th,channel);
+  }
+
+  window.displaySlides=function(){
+    var p=E('previewContent'),d=E('downloadContent'),html='<div class="slides-grid">';
+    for(var i=0;i<generatedSlides.length;i++)html+='<div class="slide-item" onclick="downloadSlide('+i+')"><canvas id="canvas-'+i+'"></canvas><div class="slide-label">Slide '+(i+1)+'</div></div>';
+    html+='</div>';p.innerHTML=html;var dl='<div class="download-grid">';for(var j=0;j<generatedSlides.length;j++)dl+='<button class="btn-download" onclick="downloadSlide('+j+')">Download Slide '+(j+1)+'</button>';dl+='</div>';d.innerHTML=dl;
+    for(var k=0;k<generatedSlides.length;k++){var f=selectedFormat==='youtube'?[1280,720]:selectedFormat==='square'?[1080,1080]:selectedFormat==='portrait'?[1080,1350]:[1080,1920],cv=E('canvas-'+k);cv.width=f[0];cv.height=f[1];render(cv,k,generatedSlides.length,generatedSlides[k]);}
+  };
+
+  window.generateFromManualV2=function(){
+    var title=(E('manualHeadline')&&E('manualHeadline').value.trim())||(E('urlHeadline')&&E('urlHeadline').value.trim());
+    var body=(E('manualContent')&&E('manualContent').value.trim())||(E('urlContent')&&E('urlContent').value.trim());
+    if(!title||!body){alert('Add headline and content first.');return}
+    var plans=window.totPlan||[];
+    var n=parseInt((E('slideCount')&&E('slideCount').value)||5,10)||5;n=Math.max(4,Math.min(6,n));
+    if(!plans.length)plans=Array.from({length:n},function(_,i){return {title:i===0?title:['Key Details','What happened?','Important Information','What to know next','Takeaway'][i-1]||title,text:body,number:String(i+1)}})
+    generatedSlides=[];for(var i=0;i<n;i++){var p=plans[i]||plans[plans.length-1];generatedSlides.push({title:p.title||title,text:p.text||body,number:p.number||String(i+1)})}
+    displaySlides();switchTab('preview');
+  };
+  window.generateFromManual=window.generateFromManualV2;
+
+  // Make AI output match the selected style without changing the content.
+  var previousAI=window.aiStoryV2;
+  window.aiStoryV2=async function(){
+    await previousAI();
+    if(window.totPlan&&window.totPlan.length){
+      window.totPlan=window.totPlan.map(function(s,i){return Object.assign({},s,{number:s.number||String(i+1)})});
+      generateFromManualV2();
+    }
+  };
+
+  addControls();setTimeout(addControls,400);setTimeout(addControls,1200);
+})();
+</script>
 </body>
 </html>
