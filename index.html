@@ -3,40 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Professional Slides Creator</title>
+<title>Professional Slides Creator with URL Fetch</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:Arial,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px;}
 .container{max-width:1200px;margin:0 auto;}
 .header{text-align:center;color:white;margin-bottom:30px;}
 .header h1{font-size:2.5em;margin-bottom:10px;}
-.header p{font-size:1.1em;opacity:0.95;}
-.card{background:white;border-radius:15px;padding:25px;box-shadow:0 10px 40px rgba(0,0,0,0.2);margin-bottom:30px;}
-.card h2{color:#667eea;margin-bottom:20px;font-size:1.5em;}
 .input-group{margin-bottom:15px;}
 .input-group label{display:block;color:#555;font-weight:600;margin-bottom:8px;}
 input[type="text"],textarea,input[type="file"],select{width:100%;padding:12px 15px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;}
-input[type="file"]{padding:10px;}
 textarea{resize:vertical;min-height:80px;}
 button{width:100%;padding:12px 20px;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;transition:all 0.3s;margin-top:10px;}
 .btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(102,126,234,0.4);}
+.btn-secondary{background:#17a2b8;color:white;}
+.btn-secondary:hover{background:#138496;}
+.card{background:white;border-radius:15px;padding:25px;box-shadow:0 10px 40px rgba(0,0,0,0.2);margin-bottom:30px;}
+.card h2{color:#667eea;margin-bottom:20px;font-size:1.5em;}
 .status{padding:15px;border-radius:8px;margin-bottom:20px;display:none;}
 .status.success{background:#d4edda;color:#155724;border-left:4px solid #28a745;}
 .status.error{background:#f8d7da;color:#721c24;border-left:4px solid #f5222d;}
+.status.info{background:#d1ecf1;color:#0c5460;border-left:4px solid #17a2b8;}
 .info-box{background:#e7f3ff;border-left:4px solid #2196F3;padding:15px;border-radius:6px;margin-bottom:15px;font-size:13px;color:#0c5460;}
-.template-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;}
+.template-selector{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:15px;}
 .template-btn{padding:15px;border:2px solid #e0e0e0;background:white;border-radius:8px;cursor:pointer;text-align:center;font-weight:600;color:#555;transition:all 0.3s;}
 .template-btn.active{border-color:#667eea;background:rgba(102,126,234,0.1);color:#667eea;}
-.template-btn:hover{border-color:#667eea;}
+.color-selector{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:15px;}
+.color-btn{padding:20px;border-radius:8px;border:3px solid #e0e0e0;cursor:pointer;transition:all 0.3s;}
+.color-btn.active{border-color:#333;transform:scale(1.05);}
 .format-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;}
-.format-btn{padding:12px;border:2px solid #e0e0e0;background:white;border-radius:8px;cursor:pointer;text-align:center;font-weight:600;color:#555;}
+.format-btn{padding:12px;border:2px solid #e0e0e0;background:white;border-radius:8px;cursor:pointer;font-weight:600;color:#555;}
 .format-btn.active{border-color:#667eea;background:rgba(102,126,234,0.1);color:#667eea;}
 .slides-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:15px;margin-top:20px;}
-.slide-item{position:relative;border-radius:8px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.1);cursor:pointer;transition:all 0.3s;}
-.slide-item:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,0.15);}
-.slide-item canvas{width:100%;height:100%;display:block;}
-.slide-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);color:white;padding:5px;text-align:center;font-size:12px;font-weight:600;}
+.slide-item{position:relative;border-radius:8px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.1);cursor:pointer;}
+.slide-item canvas{width:100%;display:block;}
+.slide-label{position:absolute;bottom:0;background:rgba(0,0,0,0.7);color:white;padding:5px;width:100%;text-align:center;font-size:12px;}
 .download-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px;}
 .btn-download{background:#28a745;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;}
 .btn-download:hover{background:#218838;}
@@ -46,67 +48,95 @@ button{width:100%;padding:12px 20px;border:none;border-radius:8px;font-size:1em;
 .tab-content{display:none;}
 .tab-content.active{display:block;}
 .image-preview{max-width:100%;max-height:200px;border-radius:8px;margin-top:10px;}
-.color-selector{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:15px;}
-.color-btn{padding:20px;border-radius:8px;border:3px solid #e0e0e0;cursor:pointer;transition:all 0.3s;}
-.color-btn.active{border-color:#333;transform:scale(1.05);}
-@media (max-width:600px){.template-selector,.format-selector,.download-grid{grid-template-columns:1fr;}}
+.loader{display:inline-block;width:20px;height:20px;border:3px solid #f3f3f3;border-top:3px solid #667eea;border-radius:50%;animation:spin 1s linear infinite;margin-left:10px;}
+@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+.url-input-section{background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:15px;}
+@media (max-width:600px){.template-selector{grid-template-columns:1fr 1fr;}.color-selector{grid-template-columns:repeat(3,1fr);}.download-grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
 <div class="container">
 <div class="header">
 <h1>Professional Slides Creator</h1>
-<p>Create Beautiful Slides with Multiple Templates</p>
+<p>Paste URL or Manual Entry</p>
 </div>
 
 <div class="card">
 <div class="tabs">
-<button class="tab-btn active" onclick="switchTab('settings')">Settings</button>
-<button class="tab-btn" onclick="switchTab('create')">Create</button>
+<button class="tab-btn active" onclick="switchTab('url')">URL Fetch</button>
+<button class="tab-btn" onclick="switchTab('manual')">Manual Entry</button>
 <button class="tab-btn" onclick="switchTab('preview')">Preview</button>
 <button class="tab-btn" onclick="switchTab('download')">Download</button>
 </div>
 
-<div id="settings" class="tab-content active">
-<h2>Channel Settings</h2>
-<div class="info-box">Configure your channel branding for all slides</div>
+<div id="url" class="tab-content active">
+<h2>Fetch from URL</h2>
+<div class="info-box">Paste news URL or article link - content will be automatically extracted</div>
+
+<div id="statusUrl"></div>
+
+<div class="url-input-section">
+<div class="input-group">
+<label>Paste News URL or Article Link</label>
+<input type="text" id="urlInput" placeholder="https://example.com/news/article-title">
+</div>
+
+<button class="btn-secondary" onclick="fetchFromUrl()">
+<span id="fetchBtnText">Fetch Content from URL</span>
+</button>
+</div>
+
+<div id="urlResults" style="display:none;border-top:2px solid #e0e0e0;padding-top:15px;margin-top:15px;">
+<h3 style="color:#333;margin-bottom:15px;">Extracted Content</h3>
+
+<div class="input-group">
+<label>Headline (Auto-detected)</label>
+<input type="text" id="urlHeadline" placeholder="Headline will appear here">
+</div>
+
+<div class="input-group">
+<label>Content (Auto-detected)</label>
+<textarea id="urlContent" placeholder="Content will appear here"></textarea>
+</div>
+
+<div class="input-group">
+<label>Image (Auto-detected)</label>
+<img id="urlImagePreview" class="image-preview" style="display:none;">
+<p id="urlImageStatus" style="color:#999;font-size:13px;margin-top:5px;">No image found</p>
+</div>
+
+<button class="btn-primary" onclick="useUrlContent()">Use This Content</button>
+</div>
+</div>
+
+<div id="manual" class="tab-content">
+<h2>Manual Entry</h2>
+<div class="info-box">Or enter content manually</div>
+
+<div id="statusManual"></div>
 
 <div class="input-group">
 <label>Channel Logo (Emoji)</label>
-<input type="text" id="channelLogo" value="📰" maxlength="2">
+<input type="text" id="manualLogo" value="📰" maxlength="2">
 </div>
 
 <div class="input-group">
 <label>Channel Name</label>
-<input type="text" id="channelName" value="My News Channel">
+<input type="text" id="manualChannelName" value="My News Channel">
 </div>
 
 <div class="input-group">
-<label>Channel Tagline</label>
-<input type="text" id="channelTagline" value="Daily News Updates">
-</div>
-
-<button class="btn-primary" onclick="saveChannelSettings()">Save Settings</button>
-</div>
-
-<div id="create" class="tab-content">
-<h2>Create Slides</h2>
-<div class="info-box">Choose template, add content, upload images and background</div>
-
-<div id="statusCreate"></div>
-
-<div class="input-group">
-<label>Select Template Type</label>
+<label>Select Template</label>
 <div class="template-selector">
 <button class="template-btn active" onclick="setTemplate('breaking')">Breaking News</button>
 <button class="template-btn" onclick="setTemplate('vacancy')">Job Vacancy</button>
-<button class="template-btn" onclick="setTemplate('article')">Article/Blog</button>
-<button class="template-btn" onclick="setTemplate('event')">Event/Announcement</button>
+<button class="template-btn" onclick="setTemplate('article')">Article</button>
+<button class="template-btn" onclick="setTemplate('event')">Event</button>
 </div>
 </div>
 
 <div class="input-group">
-<label>Select Design Color</label>
+<label>Select Color Design</label>
 <div class="color-selector">
 <button class="color-btn active" onclick="setColor('#667eea','#764ba2')" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);"></button>
 <button class="color-btn" onclick="setColor('#f093fb','#f5576c')" style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);"></button>
@@ -118,92 +148,156 @@ button{width:100%;padding:12px 20px;border:none;border-radius:8px;font-size:1em;
 
 <div class="input-group">
 <label>Background Image (Optional)</label>
-<input type="file" id="backgroundImage" accept="image/*" onchange="previewBackground()">
+<input type="file" id="bgImage" accept="image/*" onchange="previewBg()">
 <img id="bgPreview" class="image-preview" style="display:none;">
 </div>
 
 <div class="input-group">
-<label>Add Image to Slide (Optional)</label>
-<input type="file" id="contentImage" accept="image/*" onchange="previewContentImage()">
-<img id="contentImgPreview" class="image-preview" style="display:none;">
+<label>Headline</label>
+<input type="text" id="manualHeadline" placeholder="Enter headline">
 </div>
 
 <div class="input-group">
-<label>Headline/Title</label>
-<input type="text" id="headline" placeholder="Enter main headline" value="Breaking News">
+<label>Content</label>
+<textarea id="manualContent" placeholder="Enter content"></textarea>
 </div>
 
 <div class="input-group">
-<label>Description/Content</label>
-<textarea id="content" placeholder="Paste news content or write description">Paste your news content here or describe the job vacancy or announcement</textarea>
+<label>Details (Optional)</label>
+<textarea id="manualDetails" placeholder="Extra info" style="min-height:60px;"></textarea>
 </div>
 
 <div class="input-group">
-<label>Additional Details (Optional)</label>
-<textarea id="details" placeholder="Extra info, link, contact, etc" style="min-height:60px;"></textarea>
-</div>
-
-<div class="input-group">
-<label>Choose Format</label>
+<label>Format</label>
 <div class="format-selector">
-<button class="format-btn active" onclick="setFormat('instagram')">Instagram - 1080x1920</button>
-<button class="format-btn" onclick="setFormat('youtube')">YouTube - 1280x720</button>
+<button class="format-btn active" onclick="setFormat('instagram')">Instagram (1080x1920)</button>
+<button class="format-btn" onclick="setFormat('youtube')">YouTube (1280x720)</button>
 </div>
 </div>
 
-<button class="btn-primary" onclick="generateSlides()">Generate Slides</button>
+<button class="btn-primary" onclick="generateFromManual()">Generate Slides</button>
 </div>
 
 <div id="preview" class="tab-content">
-<h2>Preview Slides</h2>
-<div class="info-box">Click any slide to download it</div>
+<h2>Preview</h2>
+<div class="info-box">Click slide to download</div>
 <div id="previewContent"><p style="color:#999;text-align:center;padding:40px;">Generate slides first</p></div>
 </div>
 
 <div id="download" class="tab-content">
-<h2>Download Slides</h2>
-<div class="info-box">Download all your slides as PNG files</div>
+<h2>Download</h2>
+<div class="info-box">Download all slides as PNG</div>
 <div id="downloadContent"><p style="color:#999;text-align:center;padding:40px;">Generate slides first</p></div>
 </div>
 </div>
 </div>
 
 <script>
-var selectedTemplate = 'breaking';
-var selectedFormat = 'instagram';
-var selectedColorStart = '#667eea';
-var selectedColorEnd = '#764ba2';
-var generatedSlides = [];
-var backgroundImage = null;
-var contentImage = null;
-var channelSettings = {logo:'📰',name:'My News Channel',tagline:'Daily News Updates'};
+var selectedTemplate='breaking';
+var selectedFormat='instagram';
+var selectedColorStart='#667eea';
+var selectedColorEnd='#764ba2';
+var generatedSlides=[];
+var backgroundImage=null;
+var fetchedImageUrl=null;
 
 function setTemplate(t){selectedTemplate=t;var btns=document.querySelectorAll('.template-btn');for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');event.target.classList.add('active');}
 function setFormat(f){selectedFormat=f;var btns=document.querySelectorAll('.format-btn');for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');event.target.classList.add('active');}
 function setColor(s,e){selectedColorStart=s;selectedColorEnd=e;var btns=document.querySelectorAll('.color-btn');for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');event.target.classList.add('active');}
 function switchTab(t){var c=document.querySelectorAll('.tab-content');for(var i=0;i<c.length;i++)c[i].classList.remove('active');var b=document.querySelectorAll('.tab-btn');for(var i=0;i<b.length;i++)b[i].classList.remove('active');document.getElementById(t).classList.add('active');event.target.classList.add('active');}
-function saveChannelSettings(){channelSettings.logo=document.getElementById('channelLogo').value||'📰';channelSettings.name=document.getElementById('channelName').value||'My News Channel';channelSettings.tagline=document.getElementById('channelTagline').value||'Daily News Updates';showStatus('Settings saved','success');}
-function previewBackground(){var f=document.getElementById('backgroundImage').files[0];if(!f)return;var r=new FileReader();r.onload=function(e){backgroundImage=e.target.result;document.getElementById('bgPreview').src=backgroundImage;document.getElementById('bgPreview').style.display='block';};r.readAsDataURL(f);}
-function previewContentImage(){var f=document.getElementById('contentImage').files[0];if(!f)return;var r=new FileReader();r.onload=function(e){contentImage=e.target.result;document.getElementById('contentImgPreview').src=contentImage;document.getElementById('contentImgPreview').style.display='block';};r.readAsDataURL(f);}
-function showStatus(m,t){var s=document.getElementById('statusCreate');s.className='status '+t;s.textContent=m;s.style.display='block';setTimeout(function(){s.style.display='none';},5000);}
+function previewBg(){var f=document.getElementById('bgImage').files[0];if(!f)return;var r=new FileReader();r.onload=function(e){backgroundImage=e.target.result;document.getElementById('bgPreview').src=backgroundImage;document.getElementById('bgPreview').style.display='block';};r.readAsDataURL(f);}
+function showStatus(m,t,e){var s=document.getElementById(e);s.className='status '+t;s.textContent=m;s.style.display='block';setTimeout(function(){s.style.display='none';},5000);}
 
-function generateSlides(){
-var headline=document.getElementById('headline').value.trim();
-var content=document.getElementById('content').value.trim();
-var details=document.getElementById('details').value.trim();
+function fetchFromUrl(){
+var url=document.getElementById('urlInput').value.trim();
+if(!url){showStatus('Enter URL','error','statusUrl');return;}
+if(!url.startsWith('http')){url='https://'+url;}
 
-if(!headline||!content){showStatus('Fill headline and content','error');return;}
+document.getElementById('fetchBtnText').textContent='Fetching...';
+document.querySelector('.btn-secondary').disabled=true;
 
-showStatus('Generating slides...','info');
+fetch('https://cors-anywhere.herokuapp.com/'+url,{method:'GET',headers:{'Accept':'text/html'}}).then(function(r){return r.text();}).then(function(html){
+var parser=new DOMParser();
+var doc=parser.parseFromString(html,'text/html');
+
+var headline=doc.querySelector('h1');
+var og_title=doc.querySelector('meta[property="og:title"]');
+var title=og_title?og_title.getAttribute('content'):(headline?headline.textContent:'No title found');
+
+var content_elem=doc.querySelector('article p, .content p, .post-content p, p');
+var og_desc=doc.querySelector('meta[property="og:description"]');
+var content=og_desc?og_desc.getAttribute('content'):(content_elem?content_elem.textContent:'No content found');
+
+var og_image=doc.querySelector('meta[property="og:image"]');
+var img_elem=doc.querySelector('article img, .content img, .post img');
+var imageUrl=og_image?og_image.getAttribute('content'):(img_elem?img_elem.src:null);
+
+document.getElementById('urlHeadline').value=title.substring(0,100);
+document.getElementById('urlContent').value=content.substring(0,500);
+
+if(imageUrl){
+fetchedImageUrl=imageUrl;
+document.getElementById('urlImagePreview').src=imageUrl;
+document.getElementById('urlImagePreview').style.display='block';
+document.getElementById('urlImageStatus').textContent='Image loaded';
+}
+
+document.getElementById('urlResults').style.display='block';
+document.getElementById('fetchBtnText').textContent='Fetch Content from URL';
+document.querySelector('.btn-secondary').disabled=false;
+showStatus('Content extracted','success','statusUrl');
+}).catch(function(e){
+console.log('CORS issue, trying alternative...');
+fetchUsingMetaTags(url);
+});
+}
+
+function fetchUsingMetaTags(url){
+fetch('https://api.linkpreview.net?key=FREE&q='+encodeURIComponent(url)).then(r=>r.json()).then(d=>{
+document.getElementById('urlHeadline').value=d.title||'News Article';
+document.getElementById('urlContent').value=d.description||'Check full article for details';
+if(d.image){
+fetchedImageUrl=d.image;
+document.getElementById('urlImagePreview').src=d.image;
+document.getElementById('urlImagePreview').style.display='block';
+document.getElementById('urlImageStatus').textContent='Image loaded';
+}
+document.getElementById('urlResults').style.display='block';
+document.getElementById('fetchBtnText').textContent='Fetch Content from URL';
+document.querySelector('.btn-secondary').disabled=false;
+showStatus('Content extracted','success','statusUrl');
+}).catch(e=>{
+showStatus('Error: Could not fetch URL. Try manual entry','error','statusUrl');
+document.getElementById('fetchBtnText').textContent='Fetch Content from URL';
+document.querySelector('.btn-secondary').disabled=false;
+});
+}
+
+function useUrlContent(){
+var headline=document.getElementById('urlHeadline').value;
+var content=document.getElementById('urlContent').value;
+if(!headline||!content){showStatus('Fill headline and content','error','statusUrl');return;}
+
 generatedSlides=[];
-
-setTimeout(function(){
-generatedSlides.push({type:'channel',title:channelSettings.name,tagline:channelSettings.tagline,logo:channelSettings.logo});
-generatedSlides.push({type:'content',template:selectedTemplate,title:headline,content:content,details:details});
+generatedSlides.push({type:'content',template:selectedTemplate,title:headline,content:content,image:fetchedImageUrl});
 displaySlides();
-showStatus('Slides generated','success');
 switchTab('preview');
-},500);
+showStatus('Slides generated','success','statusUrl');
+}
+
+function generateFromManual(){
+var headline=document.getElementById('manualHeadline').value.trim();
+var content=document.getElementById('manualContent').value.trim();
+if(!headline||!content){showStatus('Fill headline and content','error','statusManual');return;}
+
+generatedSlides=[];
+var logo=document.getElementById('manualLogo').value||'📰';
+var channelName=document.getElementById('manualChannelName').value||'My News Channel';
+generatedSlides.push({type:'channel',title:channelName,logo:logo});
+generatedSlides.push({type:'content',template:selectedTemplate,title:headline,content:content,details:document.getElementById('manualDetails').value});
+displaySlides();
+switchTab('preview');
+showStatus('Slides generated','success','statusManual');
 }
 
 function displaySlides(){
@@ -216,7 +310,7 @@ html+='</div>';
 previewContent.innerHTML=html;
 
 var dlhtml='<div class="download-grid">';
-for(var i=0;i<generatedSlides.length;i++){dlhtml+='<button class="btn-download" onclick="downloadSlide('+i+')">Slide '+(i+1)+'</button>';}
+for(var i=0;i<generatedSlides.length;i++){dlhtml+='<button class="btn-download" onclick="downloadSlide('+i+')">Download Slide '+(i+1)+'</button>';}
 dlhtml+='</div>';
 downloadContent.innerHTML=dlhtml;
 
@@ -248,16 +342,6 @@ drawSlideContent(ctx,w,h,slide);
 
 function drawSlideContent(ctx,w,h,slide){
 if(slide.type==='channel'){
-drawChannelSlide(ctx,w,h,slide);
-}else if(slide.type==='content'){
-if(slide.template==='breaking'){drawBreakingNews(ctx,w,h,slide);}
-else if(slide.template==='vacancy'){drawJobVacancy(ctx,w,h,slide);}
-else if(slide.template==='article'){drawArticle(ctx,w,h,slide);}
-else if(slide.template==='event'){drawEvent(ctx,w,h,slide);}
-}
-}
-
-function drawChannelSlide(ctx,w,h,slide){
 ctx.font='bold '+(w>800?80:60)+'px Arial';
 ctx.textAlign='center';
 ctx.textBaseline='top';
@@ -265,18 +349,22 @@ ctx.fillStyle='white';
 ctx.fillText(slide.logo,w/2,h/3);
 ctx.font='bold '+(w>800?70:50)+'px Arial';
 ctx.fillText(slide.title,w/2,h/2);
-ctx.font=(w>800?40:30)+'px Arial';
-ctx.fillStyle='rgba(255,255,255,0.9)';
-ctx.fillText(slide.tagline,w/2,h/1.5);
-}
-
-function drawBreakingNews(ctx,w,h,slide){
+}else if(slide.type==='content'){
+if(slide.template==='breaking'){
 ctx.fillStyle='rgba(255,0,0,0.8)';
 ctx.fillRect(0,0,w,100);
 ctx.font='bold '+(w>800?50:35)+'px Arial';
 ctx.fillStyle='white';
 ctx.textAlign='left';
 ctx.fillText('BREAKING NEWS',20,60);
+}else if(slide.template==='vacancy'){
+ctx.fillStyle='rgba(76,175,80,0.9)';
+ctx.fillRect(0,0,w,100);
+ctx.font='bold '+(w>800?50:35)+'px Arial';
+ctx.fillStyle='white';
+ctx.textAlign='center';
+ctx.fillText('JOB VACANCY',w/2,60);
+}
 
 ctx.font='bold '+(w>800?60:40)+'px Arial';
 ctx.textAlign='center';
@@ -287,68 +375,9 @@ for(var i=0;i<titleLines.length;i++){ctx.fillText(titleLines[i],w/2,titleY+(i*60
 
 ctx.font=(w>800?35:25)+'px Arial';
 var contentLines=wrapText(slide.content.split(' '),w-80,ctx);
-var contentY=h/2;
+var contentY=h/1.8;
 for(var i=0;i<contentLines.length&&i<3;i++){ctx.fillText(contentLines[i],w/2,contentY+(i*50));}
 }
-
-function drawJobVacancy(ctx,w,h,slide){
-ctx.fillStyle='rgba(76,175,80,0.9)';
-ctx.fillRect(0,0,w,120);
-ctx.font='bold '+(w>800?50:35)+'px Arial';
-ctx.fillStyle='white';
-ctx.textAlign='center';
-ctx.fillText('JOB VACANCY',w/2,70);
-
-ctx.font='bold '+(w>800?50:40)+'px Arial';
-ctx.fillStyle='white';
-ctx.textAlign='center';
-ctx.fillText(slide.title,w/2,h/2.5);
-
-ctx.font=(w>800?35:25)+'px Arial';
-ctx.fillStyle='white';
-var lines=wrapText(slide.content.split(' '),w-80,ctx);
-var startY=h/1.8;
-for(var i=0;i<lines.length&&i<4;i++){ctx.fillText(lines[i],w/2,startY+(i*50));}
-
-if(slide.details){
-ctx.font='bold '+(w>800?30:20)+'px Arial';
-ctx.fillStyle='rgba(255,255,0,0.95)';
-ctx.fillText('Details: '+slide.details.substring(0,30),w/2,h-80);
-}
-}
-
-function drawArticle(ctx,w,h,slide){
-ctx.font='bold '+(w>800?60:45)+'px Arial';
-ctx.fillStyle='white';
-ctx.textAlign='center';
-var titleLines=wrapText(slide.title.split(' '),w-60,ctx);
-var titleY=h/5;
-for(var i=0;i<titleLines.length;i++){ctx.fillText(titleLines[i],w/2,titleY+(i*70));}
-
-ctx.font=(w>800?40:28)+'px Arial';
-ctx.fillStyle='rgba(255,255,255,0.95)';
-var contentLines=wrapText(slide.content.split(' '),w-80,ctx);
-var contentY=h/2.2;
-for(var i=0;i<contentLines.length&&i<4;i++){ctx.fillText(contentLines[i],w/2,contentY+(i*50));}
-}
-
-function drawEvent(ctx,w,h,slide){
-ctx.fillStyle='rgba(156,39,176,0.85)';
-ctx.fillRect(0,0,w,100);
-ctx.font='bold '+(w>800?45:35)+'px Arial';
-ctx.fillStyle='white';
-ctx.textAlign='center';
-ctx.fillText('EVENT ANNOUNCEMENT',w/2,60);
-
-ctx.font='bold '+(w>800?55:40)+'px Arial';
-ctx.fillStyle='white';
-ctx.fillText(slide.title,w/2,h/2.5);
-
-ctx.font=(w>800?40:28)+'px Arial';
-ctx.fillStyle='rgba(255,255,255,0.9)';
-var lines=wrapText(slide.content.split(' '),w-80,ctx);
-var startY=h/1.8;
-for(var i=0;i<lines.length&&i<3;i++){ctx.fillText(lines[i],w/2,startY+(i*50));}
 }
 
 function wrapText(words,maxW,ctx){
@@ -367,7 +396,7 @@ function downloadSlide(index){
 var canvas=document.getElementById('canvas-'+index);
 var link=document.createElement('a');
 link.href=canvas.toDataURL('image/png');
-link.download='slide-'+(index+1)+'-'+selectedTemplate+'.png';
+link.download='slide-'+(index+1)+'.png';
 link.click();
 }
 </script>
