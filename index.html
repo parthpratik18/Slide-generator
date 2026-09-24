@@ -470,5 +470,197 @@ window.fetchFromUrl=readV2;window.aiStoryV2=aiStoryV2;
 setup();motionV2()
 })();
 </script>
+
+<script>
+(function(){
+  var oldDisplay=window.displaySlides;
+  var oldGenerate=window.generateFromManualV2;
+
+  function el(id){return document.getElementById(id)}
+  function note2(t,c){
+    var e=el('statusManual')||el('statusUrl');
+    if(e){e.className='status '+(c||'info');e.textContent=t;e.style.display='block';}
+  }
+
+  function installProUI(){
+    var manual=el('manual');
+    if(!manual || el('proControls')) return;
+    var box=document.createElement('div');
+    box.id='proControls';
+    box.innerHTML=
+      '<div class="info-box" style="border-left-color:#111827;background:#f1f5f9;color:#0f172a"><b>PRO STORY DESIGN</b><br>Choose the story type. The AI/layout engine will use a different visual system for each.</div>'+
+      '<div class="input-group"><label>Story Type</label><select id="storyType"><option value="news">News</option><option value="jobs">Job Vacancy / Recruitment</option><option value="facts">Facts / Explainer</option></select></div>'+
+      '<div class="input-group"><label>Source / Website</label><input type="text" id="source" value="Top Of Trends India" placeholder="Source name"></div>'+
+      '<div class="input-group"><label>Slides</label><select id="slideCount"><option value="4">4 Slides</option><option value="5" selected>5 Slides</option><option value="6">6 Slides</option></select></div>';
+    var format=manual.querySelector('.input-group:nth-last-of-type(1)');
+    manual.insertBefore(box, format||manual.lastElementChild);
+    var btn=manual.querySelector('button.btn-primary[onclick*="generateFromManual"]');
+    if(btn){btn.setAttribute('onclick','generateFromManualV2()');btn.textContent='Generate Complete Professional Post';}
+  }
+
+  function typeTheme(type){
+    if(type==='jobs') return {accent:'#16a34a',accent2:'#0f766e',label:'JOB UPDATE',cta:'FOLLOW FOR DAILY JOB UPDATES'};
+    if(type==='facts') return {accent:'#f59e0b',accent2:'#ea580c',label:'FACT CHECK',cta:'FOLLOW FOR MORE FACTS'};
+    return {accent:'#ef4444',accent2:'#b91c1c',label:'BREAKING NEWS',cta:'SUBSCRIBE • FOLLOW • SHARE'};
+  }
+
+  function roundedRect(c,x,y,w,h,r){
+    c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();
+  }
+  function wrap(c,text,maxW,maxLines){
+    var words=String(text||'').replace(/\s+/g,' ').trim().split(' '), lines=[], line='';
+    for(var i=0;i<words.length;i++){
+      var test=line?line+' '+words[i]:words[i];
+      if(c.measureText(test).width>maxW && line){lines.push(line);line=words[i];if(lines.length===maxLines-1){break;}}
+      else line=test;
+    }
+    if(line && lines.length<maxLines) lines.push(line);
+    return lines;
+  }
+  function fitFont(c,text,maxW,start,min){
+    var s=start;
+    while(s>min){c.font='900 '+s+'px Arial';if(c.measureText(text).width<=maxW)return s;s-=2;}
+    return s;
+  }
+  function coverImage(c,img,x,y,w,h){
+    if(!img)return false;
+    var r=img.width/img.height, b=w/h, sw=img.width,sh=img.height,sx=0,sy=0;
+    if(r>b){sw=img.height*b;sx=(img.width-sw)/2}else{sh=img.width/b;sy=(img.height-sh)/2}
+    c.drawImage(img,sx,sy,sw,sh,x,y,w,h);return true;
+  }
+
+  function drawProfessional(canvas,index,total,slide){
+    var c=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
+    var type=(el('storyType')&&el('storyType').value)||'news', th=typeTheme(type);
+    var channel=(el('manualChannelName')&&el('manualChannelName').value)||'TOP OF TRENDS INDIA';
+    var source=(el('source')&&el('source').value)||'Top Of Trends India';
+    var layout=slide.layout||(['hero','facts','split-image','big-number','takeaway'][index%5]);
+    var title=slide.title||'Latest Update', text=slide.text||slide.content||'', visual=slide.visual||'';
+    c.clearRect(0,0,w,h);c.fillStyle='#070b14';c.fillRect(0,0,w,h);
+
+    var topH=(w>=1200?88:Math.max(72,w*.075));
+    c.fillStyle='#0b1220';c.fillRect(0,0,w,topH);
+    c.fillStyle=th.accent;c.fillRect(0,0,8,topH);
+    c.fillStyle='#fff';c.font='800 '+Math.max(18,w*.022)+'px Arial';c.textAlign='left';c.textBaseline='middle';
+    c.fillText(channel.toUpperCase(),Math.max(24,w*.035),topH/2);
+    c.fillStyle='#94a3b8';c.font='700 '+Math.max(11,w*.012)+'px Arial';c.textAlign='right';
+    c.fillText((index+1)+' / '+total,w-Math.max(24,w*.035),topH/2);
+
+    var pad=Math.max(36,w*.055);
+    var contentTop=topH+pad;
+
+    if(layout==='big-number'){
+      var num=slide.number||String(index+1);
+      c.fillStyle=th.accent;c.font='900 '+Math.min(h*.32,w*.36)+'px Arial';c.textAlign='left';c.textBaseline='alphabetic';
+      c.fillText(num,pad,contentTop+h*.28);
+      c.fillStyle='#fff';c.font='900 '+fitFont(c,title,w-pad*2,Math.min(74,w*.075),28)+'px Arial';
+      var tl=wrap(c,title,w-pad*2,3);tl.forEach(function(s,n){c.fillText(s,pad,contentTop+h*.34+n*Math.min(78,w*.075));});
+      c.fillStyle='#cbd5e1';c.font='500 '+Math.max(18,w*.022)+'px Arial';
+      wrap(c,text,w-pad*2,5).forEach(function(s,n){c.fillText(s,pad,contentTop+h*.58+n*Math.max(28,w*.032));});
+    } else if(layout==='facts'){
+      c.fillStyle=th.accent;c.font='900 '+Math.max(14,w*.018)+'px Arial';c.fillText('KEY FACTS',pad,contentTop+20);
+      var facts=String(text).split(/\n|•|(?<=\.)\s+(?=[A-Z])/).filter(Boolean).slice(0,4);
+      if(facts.length<2) facts=[text];
+      facts.forEach(function(f,n){
+        var yy=contentTop+Math.max(80,h*.075)+n*Math.min(250,h*.18);
+        c.fillStyle='#111827';roundedRect(c,pad,yy,w-pad*2,Math.min(190,h*.14),20);c.fill();
+        c.fillStyle=th.accent;c.beginPath();c.arc(pad+35,yy+40,16,0,Math.PI*2);c.fill();
+        c.fillStyle='#fff';c.font='900 18px Arial';c.textAlign='center';c.fillText(String(n+1),pad+35,yy+46);
+        c.textAlign='left';c.font='700 '+Math.max(17,w*.019)+'px Arial';
+        wrap(c,f.trim(),w-pad*2-90,4).forEach(function(s,k){c.fillText(s,pad+70,yy+38+k*Math.max(25,w*.027));});
+      });
+    } else if(layout==='split-image' || layout==='hero'){
+      var ih=layout==='hero'?h*.42:h*.34;
+      var im=window.totBg;
+      if(im){coverImage(c,im,0,topH,w,ih);var gr=c.createLinearGradient(0,topH,0,topH+ih);gr.addColorStop(0,'#0000');gr.addColorStop(1,'#070b14');c.fillStyle=gr;c.fillRect(0,topH,w,ih);}
+      else {var g=c.createLinearGradient(0,topH,w,topH+ih);g.addColorStop(0,th.accent2);g.addColorStop(1,'#111827');c.fillStyle=g;c.fillRect(0,topH,w,ih);}
+      c.fillStyle=th.accent;c.fillRect(pad,topH+ih-48,Math.min(w*.32,310),40);
+      c.fillStyle='#fff';c.font='900 '+Math.max(12,w*.014)+'px Arial';c.textBaseline='middle';c.fillText(th.label,pad+18,topH+ih-28);
+      var ty=topH+ih+pad;
+      c.textBaseline='alphabetic';c.fillStyle='#fff';c.font='900 '+fitFont(c,title,w-pad*2,Math.min(70,w*.068),26)+'px Arial';
+      wrap(c,title,w-pad*2,4).forEach(function(s,n){c.fillText(s,pad,ty+n*Math.min(74,w*.07));});
+      c.fillStyle='#cbd5e1';c.font='500 '+Math.max(18,w*.021)+'px Arial';
+      var by=ty+Math.min(4,wrap(c,title,w-pad*2,4).length)*Math.min(74,w*.07)+25;
+      wrap(c,text,w-pad*2,5).forEach(function(s,n){c.fillText(s,pad,by+n*Math.max(27,w*.03));});
+    } else if(layout==='timeline'){
+      c.fillStyle=th.accent;c.font='900 '+Math.max(14,w*.018)+'px Arial';c.fillText('TIMELINE',pad,contentTop+20);
+      c.strokeStyle=th.accent;c.lineWidth=6;c.beginPath();c.moveTo(pad+25,contentTop+75);c.lineTo(pad+25,h*.72);c.stroke();
+      var parts=String(text).split(/\n|\||→/).filter(Boolean).slice(0,5);
+      if(!parts.length)parts=[text];
+      parts.forEach(function(p,n){var yy=contentTop+100+n*Math.min(190,h*.15);c.fillStyle=th.accent;c.beginPath();c.arc(pad+25,yy,14,0,Math.PI*2);c.fill();c.fillStyle='#fff';c.font='800 '+Math.max(17,w*.02)+'px Arial';c.fillText(pad?String(p).trim():'',pad+65,yy+7);});
+    } else {
+      c.fillStyle=th.accent;c.font='900 '+Math.max(14,w*.018)+'px Arial';c.fillText('TAKEAWAY',pad,contentTop+20);
+      c.fillStyle='#fff';c.font='900 '+fitFont(c,title,w-pad*2,Math.min(76,w*.075),28)+'px Arial';
+      wrap(c,title,w-pad*2,5).forEach(function(s,n){c.fillText(s,pad,contentTop+100+n*Math.min(80,w*.075));});
+      c.fillStyle='#cbd5e1';c.font='500 '+Math.max(18,w*.022)+'px Arial';
+      wrap(c,text,w-pad*2,7).forEach(function(s,n){c.fillText(s,pad,contentTop+h*.43+n*Math.max(30,w*.033));});
+    }
+
+    var ctaH=Math.max(68,h*.065), fy=h-ctaH;
+    c.fillStyle='#020617';c.fillRect(0,fy,w,ctaH);
+    c.fillStyle=th.accent;c.fillRect(0,fy,w*.22,5);
+    c.fillStyle='#fff';c.font='900 '+Math.max(14,w*.016)+'px Arial';c.textAlign='left';c.textBaseline='middle';
+    c.fillText(th.cta,pad,fy+ctaH*.55);
+    c.fillStyle='#94a3b8';c.font='600 '+Math.max(11,w*.012)+'px Arial';c.textAlign='right';
+    c.fillText(source.toUpperCase(),w-pad,fy+ctaH*.55);
+  }
+
+  window.displaySlides=function(){
+    var previewContent=el('previewContent'),downloadContent=el('downloadContent');
+    var html='<div class="slides-grid">';
+    for(var i=0;i<generatedSlides.length;i++) html+='<div class="slide-item" onclick="downloadSlide('+i+')"><canvas id="canvas-'+i+'"></canvas><div class="slide-label">Slide '+(i+1)+'</div></div>';
+    html+='</div>';previewContent.innerHTML=html;
+    var dl='<div class="download-grid">';
+    for(var j=0;j<generatedSlides.length;j++) dl+='<button class="btn-download" onclick="downloadSlide('+j+')">Download Slide '+(j+1)+'</button>';
+    dl+='</div>';downloadContent.innerHTML=dl;
+    for(var k=0;k<generatedSlides.length;k++){
+      var f=selectedFormat==='youtube'?[1280,720]:selectedFormat==='square'?[1080,1080]:selectedFormat==='portrait'?[1080,1350]:[1080,1920];
+      var cv=el('canvas-'+k);cv.width=f[0];cv.height=f[1];
+      drawProfessional(cv,k,generatedSlides.length,generatedSlides[k]);
+    }
+  };
+
+  window.generateFromManualV2=function(){
+    var title=(el('manualHeadline')&&el('manualHeadline').value.trim())||(el('urlHeadline')&&el('urlHeadline').value.trim());
+    var body=(el('manualContent')&&el('manualContent').value.trim())||(el('urlContent')&&el('urlContent').value.trim());
+    if(!title||!body){note2('Add headline and content first.','error');return}
+    var plans=window.totPlan||[];
+    if(!plans.length) plans=[
+      {title:title,text:body,layout:'hero'},
+      {title:'What happened?',text:body,layout:'facts'},
+      {title:'Key details',text:body,layout:'split-image'},
+      {title:'What to remember',text:body,layout:'takeaway'}
+    ];
+    var n=parseInt((el('slideCount')&&el('slideCount').value)||plans.length,10)||5;
+    n=Math.max(4,Math.min(6,n));
+    generatedSlides=[];
+    for(var i=0;i<n;i++){
+      var p=plans[i]||plans[plans.length-1];
+      generatedSlides.push({type:'content',title:p.title||title,content:p.text||body,layout:p.layout||['hero','facts','split-image','big-number','takeaway'][i%5],number:p.number||String(i+1)});
+    }
+    displaySlides();switchTab('preview');note2('Professional '+((el('storyType')&&el('storyType').value)||'news')+' post generated.','success');
+  };
+  window.generateFromManual=window.generateFromManualV2;
+
+  var oldAI=window.aiStoryV2;
+  window.aiStoryV2=async function(){
+    var type=(el('storyType')&&el('storyType').value)||'news';
+    if(!el('urlHeadline').value && el('manualHeadline').value) el('urlHeadline').value=el('manualHeadline').value;
+    var original=window.totPlan;
+    await oldAI();
+    if(window.totPlan&&window.totPlan.length){
+      window.totPlan=window.totPlan.map(function(s,i){
+        var layouts=type==='jobs'?['hero','facts','big-number','timeline','takeaway']:type==='facts'?['hero','facts','big-number','comparison','takeaway']:['hero','facts','split-image','timeline','takeaway'];
+        s.layout=s.layout||layouts[i%layouts.length];return s;
+      });
+      window.generateFromManualV2();
+    }
+  };
+
+  installProUI();
+  setTimeout(installProUI,500);
+})();
+</script>
+
 </body>
 </html>
