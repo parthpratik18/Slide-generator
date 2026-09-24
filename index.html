@@ -400,5 +400,75 @@ link.download='slide-'+(index+1)+'.png';
 link.click();
 }
 </script>
+<script>
+(function(){
+var K=localStorage.getItem('tot_gemini_key')||'';
+function q(i){return document.getElementById(i)}
+function note(t,c){var e=q('statusUrl')||q('statusManual');if(e){e.className='status '+c;e.textContent=t;e.style.display='block';setTimeout(function(){e.style.display='none'},6000)}}
+function setup(){
+ var tab=q('url');
+ if(tab&&!q('aiV2')){
+  var d=document.createElement('div');d.id='aiV2';d.style='background:#111827;border:1px solid #4338ca;border-radius:10px;padding:14px;margin:15px 0;color:white';
+  d.innerHTML='<b>✦ AI NEWS WRITER</b><p style="font-size:12px;color:#a5b4fc">Article → factual hook → 4–6 social slides.</p><input id="aiKeyV2" type="password" placeholder="Gemini API key" style="width:100%;padding:10px;background:#0b1222;color:white;border:1px solid #334155;border-radius:7px"><button class="btn-primary" style="margin-top:8px" onclick="aiStoryV2()">Write with AI</button>';
+  tab.insertBefore(d,tab.children[2]||null);if(K)q('aiKeyV2').value=K;
+ }
+ var b=document.querySelector('#url button.btn-secondary');if(b)b.onclick=readV2;
+ var f=q('bgImage');if(f&&!f.dataset.v2){f.dataset.v2='1';f.onchange=function(e){var r=new FileReader();r.onload=function(){var im=new Image();im.onload=function(){window.totBg=im};im.src=r.result;q('bgPreview').src=r.result;q('bgPreview').style.display='block'};r.readAsDataURL(e.target.files[0])}}
+}
+async function readV2(){
+ var u=(q('urlInput').value||'').trim();if(!u)return note('Paste a URL first.','error');if(u.indexOf('http')!==0)u='https://'+u;note('Reading article…','info');
+ try{
+  var r=await fetch('https://r.jina.ai/'+u);if(!r.ok)throw Error('Reader failed');
+  var t=await r.text();var a=t.split(String.fromCharCode(10)).map(function(x){return x.trim()}).filter(Boolean);
+  var h=a.find(function(x){return x.indexOf('# ')===0})||a.find(function(x){return x.length>20&&x.length<200})||'News Update';h=h.replace(/^# +/,'');
+  var body=t.replace(/!\[[^\]]*\]\([^)]+\)/g,' ').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\s+/g,' ');
+  q('urlHeadline').value=h;q('urlContent').value=body.slice(0,16000);q('urlResults').style.display='block';
+  var m=t.match(/!\[[^\]]*\]\((https?:\/\/[^) ]+)/i);if(m)imageV2(m[1]);note('Article extracted. Use AI Writer now.','success');
+ }catch(e){console.error(e);note('This site blocked extraction. Try the article URL again or paste text manually.','error')}
+}
+async function imageV2(u){
+ try{var r=await fetch('https://images.weserv.nl/?url='+encodeURIComponent(u));var b=await r.blob();var fr=new FileReader();fr.onload=function(){var im=new Image();im.onload=function(){window.totBg=im};im.src=fr.result;q('urlImagePreview').src=fr.result;q('urlImagePreview').style.display='block'};fr.readAsDataURL(b)}catch(e){}
+}
+async function aiStoryV2(){
+ var k=((q('aiKeyV2')&&q('aiKeyV2').value)||K).trim();if(!k)return note('Enter a Gemini API key.','error');localStorage.setItem('tot_gemini_key',k);K=k;
+ var title=q('urlHeadline').value||q('manualHeadline').value,body=q('urlContent').value||q('manualContent').value;if(!title&&!body)return note('Extract or enter a story first.','error');
+ note('AI is creating the newsroom storyboard…','info');
+ var p='Create a factual social-news carousel. Use ONLY facts in the article. Do not invent. Return JSON with headline, summary, slides and caption. slides must contain 4 to 6 objects with title, text and layout. First slide is hook, middle slides are key facts, final is takeaway. Keep text short. Article title: '+title+' Article: '+body.slice(0,28000);
+ try{
+  var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':k},body:JSON.stringify({contents:[{parts:[{text:p}]}]})});
+  var d=await r.json();if(!r.ok)throw Error((d.error&&d.error.message)||'Gemini failed');
+  var raw=(d.candidates[0].content.parts||[]).map(function(x){return x.text||''}).join('').trim();
+  var j=JSON.parse(raw);window.totPlan=j.slides||[];q('manualHeadline').value=j.headline||title;q('manualContent').value=j.summary||body;q('slideCount').value=String(Math.max(3,Math.min(6,window.totPlan.length||4)));generateFromManualV2();note('AI storyboard generated.','success');
+ }catch(e){console.error(e);note('AI error: '+e.message,'error')}
+}
+function wrapV2(c,s,w,n){var a=String(s||'').split(/\s+/),o=[],l='';for(var i=0;i<a.length;i++){var z=l?l+' '+a[i]:a[i];if(c.measureText(z).width>w&&l){o.push(l);l=a[i];if(o.length===n-1)break}else l=z}if(l&&o.length<n)o.push(l);return o}
+function drawV2(c,i,total,p){
+ var x=c.getContext('2d'),w=c.width,h=c.height,color=selectedColorStart||'#ef4444',title=(p&&p.title)||q('manualHeadline').value||q('urlHeadline').value||'Latest News',text=(p&&p.text)||q('manualContent').value||q('urlContent').value||'',bh=selectedFormat==='instagram'?h*.43:selectedFormat==='youtube'?h*.58:h*.48;
+ x.fillStyle='#070b14';x.fillRect(0,0,w,h);
+ if(window.totBg){var im=window.totBg,r=im.width/im.height,b=w/bh,sx=0,sy=0,sw=im.width,sh=im.height;if(r>b){sw=im.height*b;sx=(im.width-sw)/2}else{sh=im.width/b;sy=(im.height-sh)/2}x.drawImage(im,sx,sy,sw,sh,0,0,w,bh)}else{var g=x.createLinearGradient(0,0,w,bh);g.addColorStop(0,'#172554');g.addColorStop(1,'#020617');x.fillStyle=g;x.fillRect(0,0,w,bh)}
+ var ov=x.createLinearGradient(0,0,0,bh);ov.addColorStop(0,'#0001');ov.addColorStop(1,'#000e');x.fillStyle=ov;x.fillRect(0,0,w,bh);
+ x.fillStyle=color;x.fillRect(0,0,w,7);var m=w*.045;x.fillStyle='#fff';x.font='800 '+Math.max(14,w*.018)+'px Arial';x.fillText((q('manualChannelName').value||'TOP OF TRENDS INDIA').toUpperCase(),m,Math.max(35,w*.05));
+ x.fillStyle=color;x.font='900 '+Math.max(10,w*.012)+'px Arial';x.fillText((q('category').value||'Breaking News').toUpperCase(),m,bh*.13);
+ if(i===0){x.fillStyle=color;x.fillRect(0,bh*.77,w,Math.max(38,h*.065));x.fillStyle='#fff';x.font='900 '+Math.max(13,w*.016)+'px Arial';x.fillText('BREAKING NEWS',m,bh*.77+Math.max(25,h*.042))}
+ var y=bh+h*.055;x.fillStyle=color;x.fillRect(m,y,6,h*.2);x.fillStyle='#fff';x.font='900 '+Math.max(21,w*(selectedFormat==='instagram'?.058:.045))+'px Arial';x.textBaseline='top';wrapV2(x,title,w-m*2-w*.04,selectedFormat==='instagram'?6:4).forEach(function(z,n){x.fillText(z,m+w*.025,y+n*Math.max(25,w*.05))});
+ x.fillStyle='#cbd5e1';x.font='500 '+Math.max(12,w*.016)+'px Arial';wrapV2(x,text,w-m*2,selectedFormat==='instagram'?5:3).forEach(function(z,n){x.fillText(z,m+w*.025,(selectedFormat==='instagram'?h*.69:h*.78)+n*Math.max(18,w*.024))});
+ var fy=h-Math.max(48,h*.075);x.fillStyle='#020617';x.fillRect(0,fy,w,h-fy);x.fillStyle=color;x.fillRect(0,fy,w*.2,4);x.fillStyle='#94a3b8';x.font='600 '+Math.max(9,w*.011)+'px Arial';x.fillText((q('source').value||'TOP OF TRENDS').toUpperCase(),m,fy+(h-fy)*.58);x.textAlign='right';x.fillStyle='#fff';x.fillText((i+1)+' / '+total,w-m,fy+(h-fy)*.58);x.textAlign='left';x.textBaseline='alphabetic'
+}
+window.generateFromManualV2=function(){
+ var title=q('manualHeadline').value||q('urlHeadline').value,body=q('manualContent').value||q('urlContent').value;if(!title&&!body)return note('Add headline and content first.','error');
+ var p=window.totPlan||[];if(!p.length)p=[{title:title,text:body},{title:'What happened?',text:body},{title:'Key details',text:body},{title:'What to know next',text:body}];
+ var n=parseInt(q('slideCount').value)||4,f=selectedFormat==='youtube'?[1280,720]:selectedFormat==='square'?[1080,1080]:selectedFormat==='portrait'?[1080,1350]:[1080,1920];generatedSlides=[];
+ for(var i=0;i<n;i++){var c=document.createElement('canvas');c.width=f[0];c.height=f[1];drawV2(c,i,n,p[i]||p[p.length-1]);generatedSlides.push({type:'content',title:p[i]?p[i].title:title,content:p[i]?p[i].text:body})}
+ displaySlides();switchTab('preview');motionV2()
+};
+function motionV2(){
+ if(q('motionV2CSS'))return;
+ var s=document.createElement('style');s.id='motionV2CSS';s.textContent='@keyframes totScanV2{from{transform:translateY(-110%)}to{transform:translateY(1100%)}}@keyframes totFloatV2{from{transform:translateY(50px);opacity:0}30%{opacity:.7}to{transform:translateY(-120px);opacity:0}}';document.head.appendChild(s);
+ var host=document.querySelector('#previewContent .slide-item');if(!host)return;host.style.position='relative';var o=document.createElement('div');o.style='position:absolute;inset:0;pointer-events:none;overflow:hidden';var line=document.createElement('i');line.style='position:absolute;left:0;right:0;height:2px;background:#fff8;animation:totScanV2 3s linear infinite';o.appendChild(line);for(var i=0;i<8;i++){var p=document.createElement('i');p.style='position:absolute;width:4px;height:4px;border-radius:50%;background:#fff8;left:'+Math.random()*100+'%;top:'+(50+Math.random()*40)+'%;animation:totFloatV2 '+(3+Math.random()*2)+'s linear infinite;animation-delay:-'+Math.random()*4+'s';o.appendChild(p)}host.appendChild(o)
+}
+window.fetchFromUrl=readV2;window.aiStoryV2=aiStoryV2;
+setup();motionV2()
+})();
+</script>
 </body>
 </html>
