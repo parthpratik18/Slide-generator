@@ -621,5 +621,150 @@ setup();motionV2()
   setTimeout(ensureControls,1500);
 })();
 </script>
+
+<script>
+(function(){
+  function q(id){return document.getElementById(id)}
+  function setStatus(t,ok){
+    var e=q('totAIStatus');if(e){e.textContent=t;e.style.color=ok?'#86efac':'#fca5a5'}
+    var s=q('statusUrl')||q('statusManual');if(s){s.className='status '+(ok?'success':'error');s.textContent=t;s.style.display='block'}
+  }
+
+  // AI output is deliberately fed into the original stable renderer.
+  window.generateSlidesFromAI=function(slides){
+    window.totPlan=slides||[];
+    var n=window.totPlan.length;
+    if(!n)return;
+    var points=window.totPlan.map(function(s){return (s.title||'')+'\n'+(s.text||'')}).join('\n');
+    if(q('headline'))q('headline').value=(window.totPlan[0].title||q('headline').value);
+    if(q('keyPoints'))q('keyPoints').value=window.totPlan.map(function(s){return s.title+' — '+s.text}).join('\n');
+    if(q('summary'))q('summary').value=window.totPlan[n-1].text||q('summary').value;
+    if(typeof generateSlides==='function')generateSlides();
+  };
+
+  window.totGeminiTest=async function(){
+    var k=(q('aiKeyV2')&&q('aiKeyV2').value.trim())||localStorage.getItem('tot_gemini_key')||'';
+    if(!k){setStatus('Enter your Gemini API key first.',false);return}
+    localStorage.setItem('tot_gemini_key',k);
+    setStatus('Testing Gemini…',true);
+    try{
+      var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key='+encodeURIComponent(k),{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:'Reply exactly: GEMINI_OK'}]}]})
+      });
+      var d=await r.json();
+      if(!r.ok)throw Error((d.error&&d.error.message)||('HTTP '+r.status));
+      setStatus('✓ Gemini is connected. Now click Rewrite + Create Slides.',true);
+    }catch(e){setStatus('Gemini connection failed: '+e.message,false)}
+  };
+
+  window.totGeminiRewrite=async function(){
+    var k=(q('aiKeyV2')&&q('aiKeyV2').value.trim())||localStorage.getItem('tot_gemini_key')||'';
+    var title=(q('urlHeadline')&&q('urlHeadline').value.trim())||(q('manualHeadline')&&q('manualHeadline').value.trim())||(q('headline')&&q('headline').value.trim());
+    var body=(q('urlContent')&&q('urlContent').value.trim())||(q('manualContent')&&q('manualContent').value.trim())||(q('keyPoints')&&q('keyPoints').value.trim())||(q('summary')&&q('summary').value.trim());
+    var n=parseInt((q('totSlideCount')&&q('totSlideCount').value)||4,10);n=Math.max(1,Math.min(4,n));
+    if(!k){setStatus('Paste your Gemini API key first.',false);return}
+    if(!title&&!body){setStatus('Add article headline/content first.',false);return}
+    localStorage.setItem('tot_gemini_key',k);
+    setStatus('AI is rewriting the headline, SEO terms and '+n+' slide(s)…',true);
+
+    var prompt=[
+      'You are a professional digital newsroom editor and SEO copywriter.',
+      'Use ONLY facts in the supplied article. Never invent or alter names, dates, numbers, locations, quotes, eligibility, salary or claims.',
+      'Rewrite the headline so it is clear, factual and naturally contains important searchable keywords. No clickbait or keyword stuffing.',
+      'Rewrite the article summary in concise, natural language with relevant search terms.',
+      'Create EXACTLY '+n+' distinct social-media slide(s). Do not repeat the same paragraph.',
+      'For multiple slides: slide 1 = strongest factual hook; middle slides = distinct key facts; final slide = useful takeaway.',
+      'Each slide title should be short. Each slide text should be 1-3 concise sentences.',
+      'Return ONLY this JSON object:',
+      '{"headline":"...","summary":"...","keywords":["..."],"slides":[{"title":"...","text":"..."}]}',
+      '',
+      'ARTICLE HEADLINE: '+title,
+      'ARTICLE CONTENT: '+body.slice(0,30000)
+    ].join('\n');
+
+    try{
+      var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key='+encodeURIComponent(k),{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          contents:[{parts:[{text:prompt}]}],
+          generationConfig:{
+            responseMimeType:'application/json',
+            responseSchema:{
+              type:'OBJECT',
+              properties:{
+                headline:{type:'STRING'},
+                summary:{type:'STRING'},
+                keywords:{type:'ARRAY',items:{type:'STRING'}},
+                slides:{type:'ARRAY',items:{type:'OBJECT',properties:{title:{type:'STRING'},text:{type:'STRING'}},required:['title','text']}}
+              },
+              required:['headline','summary','keywords','slides']
+            }
+          }
+        })
+      });
+      var d=await r.json();
+      if(!r.ok)throw Error((d.error&&d.error.message)||('HTTP '+r.status));
+      var raw=d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts?d.candidates[0].content.parts.map(function(p){return p.text||''}).join(''):'';
+      if(!raw)throw Error('No AI response returned');
+      var j=JSON.parse(raw),slides=(j.slides||[]).slice(0,n);
+      if(slides.length!==n)throw Error('AI returned '+slides.length+' slides instead of '+n);
+      window.totPlan=slides;
+      if(q('headline'))q('headline').value=j.headline||title;
+      if(q('summary'))q('summary').value=j.summary||body;
+      if(q('keyPoints'))q('keyPoints').value=slides.map(function(s){return s.title+' — '+s.text}).join('\n');
+      if(q('manualHeadline'))q('manualHeadline').value=j.headline||title;
+      if(q('manualContent'))q('manualContent').value=j.summary||body;
+      if(q('urlHeadline'))q('urlHeadline').value=j.headline||title;
+      if(q('urlContent'))q('urlContent').value=j.summary||body;
+      if(q('totKeywords'))q('totKeywords').textContent='SEO keywords: '+(j.keywords||[]).join(' • ');
+      if(typeof generateSlidesFromAI==='function')generateSlidesFromAI(slides);
+      setStatus('✓ AI rewrite + '+n+' slide(s) generated.',true);
+    }catch(e){
+      console.error(e);setStatus('AI failed: '+e.message,false);
+    }
+  };
+
+  // Replace the original generator only for AI-created content; manual generation stays unchanged.
+  var originalGenerate=window.generateSlides;
+  window.generateSlides=function(){
+    if(window.totPlan&&window.totPlan.length){
+      var plan=window.totPlan.slice(0,4);
+      generatedSlides=[];
+      plan.forEach(function(s,i){
+        generatedSlides.push({
+          type:i===0?'channel':'content',
+          title:s.title||'News Update',
+          content:s.text||'',
+          tagline:channelSettings.tagline,
+          logo:channelSettings.logo,
+          subscribeText:channelSettings.subscribeText,
+          followText:channelSettings.followText,
+          color:colors[i%colors.length]
+        });
+      });
+      displaySlides();
+      showStatus('AI slides generated successfully.','success');
+      switchTab('preview');
+      return;
+    }
+    return originalGenerate.apply(this,arguments);
+  };
+
+  function install(){
+    var host=q('url')||q('create');if(!host)return;
+    if(!q('totAIControls')){
+      var box=document.createElement('div');box.id='totAIControls';
+      box.style='background:#111827;border:1px solid #334155;border-radius:10px;padding:15px;margin:15px 0;color:#fff';
+      box.innerHTML='<b>✦ GEMINI AI — REWRITE + SLIDES</b><div style="font-size:12px;color:#cbd5e1;margin:7px 0 10px">Rewrite headline + content for natural search keywords and create 1–4 slides.</div><input id="aiKeyV2" type="password" placeholder="Gemini API key" style="width:100%;box-sizing:border-box;padding:10px;background:#0b1222;color:#fff;border:1px solid #475569;border-radius:7px"><div style="display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap"><label>Slides:</label><select id="totSlideCount" style="padding:8px"><option>1</option><option>2</option><option>3</option><option selected>4</option></select><button type="button" class="btn-primary" id="totAIRewrite">Rewrite + Create Slides</button><button type="button" class="btn-secondary" id="totAITest">Test Gemini</button></div><div id="totAIStatus" style="margin-top:9px;font-size:12px"></div><div id="totKeywords" style="margin-top:7px;font-size:12px;color:#93c5fd"></div>';
+      host.insertBefore(box,host.firstChild);
+      q('aiKeyV2').value=localStorage.getItem('tot_gemini_key')||'';
+      q('totAIRewrite').onclick=window.totGeminiRewrite;
+      q('totAITest').onclick=window.totGeminiTest;
+    }
+  }
+  install();setTimeout(install,500);setTimeout(install,1500);
+})();
+</script>
 </body>
 </html>
