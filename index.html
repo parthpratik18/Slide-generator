@@ -766,5 +766,125 @@ setup();motionV2()
   install();setTimeout(install,500);setTimeout(install,1500);
 })();
 </script>
+
+<style id="totStudioV3">
+.tot-studio{background:#0f172a;color:#fff;border:1px solid #334155;border-radius:14px;padding:16px;margin:16px 0}
+.tot-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.tot-row label{font-size:12px;color:#cbd5e1;font-weight:700}
+.tot-row select,.tot-row input{width:100%;box-sizing:border-box;margin-top:5px;padding:10px;border-radius:8px;border:1px solid #475569;background:#0b1222;color:#fff}
+.tot-ai-btn{margin-top:12px;width:100%;padding:12px;border:0;border-radius:9px;font-weight:900;cursor:pointer}
+#totStudioStatus{font-size:12px;margin-top:9px;color:#cbd5e1;line-height:1.45}
+@media(max-width:700px){.tot-row{grid-template-columns:1fr}}
+</style>
+<script>
+(function(){
+  function q(id){return document.getElementById(id)}
+  function say(t,good){var e=q('totStudioStatus');if(e){e.textContent=t;e.style.color=good?'#86efac':'#fca5a5'}}
+
+  function imgFile(file,cb){
+    if(!file)return;
+    var fr=new FileReader();fr.onload=function(){
+      var im=new Image();im.onload=function(){cb(im,fr.result)};im.src=fr.result;
+    };fr.readAsDataURL(file);
+  }
+
+  function installStudio(){
+    var host=q('url');if(!host||q('totStudioV3'))return;
+    var box=document.createElement('div');box.id='totStudioV3';box.className='tot-studio';
+    box.innerHTML='<b>✦ AI NEWS STUDIO</b>'+
+      '<div style="font-size:12px;color:#cbd5e1;margin-top:5px">Paste a URL → choose category, language and slide count → AI extracts, rewrites and creates the complete carousel.</div>'+
+      '<div class="tot-row">'+
+      '<label>Category<select id="totCategory"><option value="breaking">🚨 Breaking News</option><option value="story">📰 News Story</option><option value="job">💼 Job Vacancy</option><option value="facts">💡 Facts</option><option value="movie">🎬 Movie Review</option></select></label>'+
+      '<label>Language<select id="totLanguage"><option value="English">English</option><option value="Hindi">Hindi</option><option value="Hinglish">Hinglish</option></select></label>'+
+      '</div>'+
+      '<div class="tot-row">'+
+      '<label>Slides<select id="totCountV3"><option value="1">1 Slide</option><option value="2">2 Slides</option><option value="3">3 Slides</option><option value="4" selected>4 Slides</option></select></label>'+
+      '<label>AI Provider<select id="totProvider"><option value="auto">Auto (Groq → Gemini)</option><option value="groq">Groq</option><option value="gemini">Gemini</option></select></label>'+
+      '</div>'+
+      '<div class="tot-row">'+
+      '<label>Groq API Key<input id="totGroqKey" type="password" placeholder="Optional"></label>'+
+      '<label>Gemini API Key<input id="totGeminiKey" type="password" placeholder="Optional"></label>'+
+      '</div>'+
+      '<div class="tot-row">'+
+      '<label>Channel Logo<input id="totLogoFile" type="file" accept="image/*"></label>'+
+      '<label>Background / Story Image<input id="totBgFile" type="file" accept="image/*"></label>'+
+      '</div>'+
+      '<div class="tot-row">'+
+      '<label>Channel Name<input id="totChannelV3" type="text" value="Top Of Trends India"></label>'+
+      '<label>Source / Handle<input id="totSourceV3" type="text" value="Top Of Trends India"></label>'+
+      '</div>'+
+      '<button class="tot-ai-btn" id="totCreateV3" style="background:#2563eb;color:#fff">✦ EXTRACT URL + REWRITE + CREATE SLIDES</button>'+
+      '<div id="totStudioStatus">Keys are used only in your browser. For production, a server-side key proxy is safer.</div>';
+    host.insertBefore(box,host.firstChild);
+    q('totGroqKey').value=localStorage.getItem('tot_groq_key')||'';
+    q('totGeminiKey').value=localStorage.getItem('tot_gemini_key')||'';
+    q('totLogoFile').onchange=function(){imgFile(this.files[0],function(im,data){window.totLogo=im;localStorage.setItem('tot_logo_data',data)})};
+    q('totBgFile').onchange=function(){imgFile(this.files[0],function(im,data){window.totBg=im;localStorage.setItem('tot_bg_data',data)})};
+    var ld=localStorage.getItem('tot_logo_data'),bd=localStorage.getItem('tot_bg_data');
+    if(ld)imgFile(dataUrlFile(ld),function(im){window.totLogo=im});if(bd)imgFile(dataUrlFile(bd),function(im){window.totBg=im});
+    q('totCreateV3').onclick=window.totCreateFromUrlV3;
+  }
+  function dataUrlFile(data){return new File([data], 'saved', {type:(data.match(/^data:([^;]+)/)||[])[1]||'image/png'})}
+
+  async function extractUrlV3(url){
+    var endpoints=['https://r.jina.ai/'+url,'https://r.jina.ai/http://r.jina.ai/http://r.jina.ai/'+url];
+    var last='';
+    for(var i=0;i<endpoints.length;i++){
+      try{
+        var r=await fetch(endpoints[i]);if(!r.ok)throw Error('HTTP '+r.status);
+        var t=await r.text();if(t&&t.length>200){
+          var lines=t.split(/\n+/).map(function(x){return x.trim()}).filter(Boolean);
+          var title=(lines.find(function(x){return /^#\s+/.test(x)})||lines.find(function(x){return x.length>25&&x.length<180})||'News Update').replace(/^#+\s*/,'');
+          var body=t.replace(/!\[[^\]]*\]\([^)]*\)/g,' ').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/https?:\/\/\S+/g,' ').replace(/\s+/g,' ').trim();
+          return {title:title,body:body.slice(0,30000),raw:t};
+        }
+      }catch(e){last=e.message}
+    }
+    throw Error('Could not extract this website. '+last+'. Paste the article text manually if the publisher blocks readers.');
+  }
+
+  async function callGroqV3(key,prompt,n){
+    var schema={type:'object',properties:{headline:{type:'string'},summary:{type:'string'},keywords:{type:'array',items:{type:'string'}},slides:{type:'array',items:{type:'object',properties:{title:{type:'string'},text:{type:'string'}},required:['title','text'],additionalProperties:false}}},required:['headline','summary','keywords','slides'],additionalProperties:false};
+    var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'openai/gpt-oss-20b',messages:[{role:'system',content:prompt}],response_format:{type:'json_schema',json_schema:{name:'news_carousel',strict:true,schema:schema}},temperature:0.3,max_tokens:5000})});
+    var d=await r.json();if(!r.ok)throw Error((d.error&&d.error.message)||('Groq HTTP '+r.status));return JSON.parse(d.choices[0].message.content);
+  }
+  async function callGeminiV3(key,prompt){
+    var schema={type:'object',properties:{headline:{type:'string'},summary:{type:'string'},keywords:{type:'array',items:{type:'string'}},slides:{type:'array',items:{type:'object',properties:{title:{type:'string'},text:{type:'string'}},required:['title','text'],additionalProperties:false}}},required:['headline','summary','keywords','slides'],additionalProperties:false};
+    var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',responseSchema:schema,temperature:0.3}})});
+    var d=await r.json();if(!r.ok)throw Error((d.error&&d.error.message)||('Gemini HTTP '+r.status));var raw=(d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts||[]).map(function(x){return x.text||''}).join('');if(!raw)throw Error('Gemini returned no content');return JSON.parse(raw);
+  }
+
+  window.totCreateFromUrlV3=async function(){
+    var url=(q('urlInput')&&q('urlInput').value||'').trim();if(!url){say('Paste a news/vacancy/movie URL first.',false);return}if(!/^https?:\/\//i.test(url))url='https://'+url;
+    var n=parseInt(q('totCountV3').value,10),cat=q('totCategory').value,lang=q('totLanguage').value,provider=q('totProvider').value;
+    var gk=q('totGroqKey').value.trim(),gg=q('totGeminiKey').value.trim();
+    if(gk)localStorage.setItem('tot_groq_key',gk);if(gg)localStorage.setItem('tot_gemini_key',gg);
+    if(provider==='groq'&&!gk){say('Enter a Groq API key.',false);return}
+    if(provider==='gemini'&&!gg){say('Enter a Gemini API key.',false);return}
+    if(provider==='auto'&&!gk&&!gg){say('Enter a Groq or Gemini API key.',false);return}
+    say('1/3 Extracting article from URL…',true);
+    try{
+      var a=await extractUrlV3(url);
+      q('urlHeadline').value=a.title;q('urlContent').value=a.body;q('urlResults').style.display='block';
+      say('2/3 AI is rewriting for '+lang+' and creating '+n+' slide(s)…',true);
+      var prompt='You are the editorial engine for a professional social media news channel.\nCATEGORY: '+cat+'\nLANGUAGE: '+lang+'\nSLIDE COUNT: EXACTLY '+n+'\n\nRules: Use ONLY facts contained in the article. Never invent names, dates, numbers, quotes, salary, eligibility, ratings, plot details or events. Rewrite the headline to be highly searchable using important factual keywords naturally. Rewrite the summary in clear social-media language with natural SEO terms; never keyword-stuff. Create EXACTLY '+n+' distinct slides. Do not repeat the same text. For JOB: prioritize vacancy, organization, posts, eligibility, dates, salary and application details only when present. For BREAKING NEWS: what happened, where, when, verified key consequence. For MOVIE REVIEW: separate factual movie details from review/opinion; do not invent ratings. For STORY/FACTS: build a clear narrative/explainer. If language is Hindi, write the output in natural Hindi; if Hinglish, natural Roman Hindi; otherwise English. Return only JSON matching the schema.\nARTICLE TITLE: '+a.title+'\nARTICLE TEXT: '+a.body;
+      var j;
+      if(provider==='groq'||(provider==='auto'&&gk)){try{j=await callGroqV3(gk,prompt,n)}catch(e){if(provider==='groq')throw e;if(!gg)throw e;j=await callGeminiV3(gg,prompt)}}
+      else j=await callGeminiV3(gg,prompt);
+      if(!j.slides||j.slides.length!==n)throw Error('AI returned '+(j.slides||[]).length+' slides; expected '+n);
+      window.totPlan=j.slides;
+      q('manualHeadline').value=j.headline||a.title;q('manualContent').value=j.summary||a.body;
+      q('totSourceV3').value=q('totSourceV3').value||new URL(url).hostname.replace(/^www\./,'');
+      q('totKeywords').textContent='Search keywords: '+(j.keywords||[]).join(' • ');
+      if(q('manualChannelName'))q('manualChannelName').value=q('totChannelV3').value;
+      if(q('slideCount'))q('slideCount').value=String(n);
+      if(typeof generateFromManualV2==='function')generateFromManualV2();
+      say('3/3 ✓ Done — '+n+' professional slide(s) created in '+lang+'.',true);
+    }catch(e){console.error(e);say('AI Studio failed: '+e.message,false)}
+  };
+
+  installStudio();setTimeout(installStudio,500);setTimeout(installStudio,1500);
+})();
+</script>
 </body>
 </html>
