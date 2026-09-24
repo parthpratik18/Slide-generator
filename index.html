@@ -936,8 +936,8 @@ function install(){
 function schema(){
  return {type:'object',properties:{
   headline:{type:'string'},summary:{type:'string'},keywords:{type:'array',items:{type:'string'}},
-  slides:{type:'array',items:{type:'object',properties:{title:{type:'string'},text:{type:'string'}},required:['title','text'],additionalProperties:false}}
- },required:['headline','summary','keywords','slides'],additionalProperties:false};
+  slides:{type:'array',items:{type:'object',properties:{title:{type:'string'},text:{type:'string'}},required:['title','text']}}
+ },required:['headline','summary','keywords','slides']};
 }
 
 function makePrompt(url,cat,lang,n){
