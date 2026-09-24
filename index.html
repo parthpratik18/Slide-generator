@@ -470,5 +470,156 @@ window.fetchFromUrl=readV2;window.aiStoryV2=aiStoryV2;
 setup();motionV2()
 })();
 </script>
+
+<script>
+(function(){
+  function Q(id){return document.getElementById(id)}
+  function status(t,type){
+    var e=Q('statusUrl')||Q('statusManual');
+    if(e){e.className='status '+type;e.textContent=t;e.style.display='block'}
+  }
+  function ensureControls(){
+    var url=Q('url'), manual=Q('manual');
+    [url,manual].forEach(function(host){
+      if(!host)return;
+      if(!Q('totAIControls')){
+        var box=document.createElement('div');box.id='totAIControls';
+        box.style='background:#111827;border:1px solid #334155;border-radius:10px;padding:15px;margin:15px 0;color:#fff';
+        box.innerHTML='<b>✦ GEMINI AI — REWRITE + SLIDES</b>'+
+          '<div style="font-size:12px;color:#cbd5e1;margin:7px 0 10px">AI rewrites the headline and content with natural search keywords, then creates the selected number of slides.</div>'+
+          '<input id="aiKeyV2" type="password" placeholder="Paste Gemini API key" style="width:100%;box-sizing:border-box;padding:10px;background:#0b1222;color:#fff;border:1px solid #475569;border-radius:7px">'+
+          '<div style="display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap">'+
+          '<label style="font-size:13px">Slides:</label><select id="totSlideCount" style="padding:9px;border-radius:7px"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4" selected>4</option></select>'+
+          '<button type="button" class="btn-primary" id="totAIRewrite">Rewrite + Create Slides</button>'+
+          '<button type="button" class="btn-secondary" id="totAITest">Test Gemini</button></div>'+
+          '<div id="totAIStatus" style="margin-top:9px;font-size:12px"></div>'+
+          '<div id="totKeywords" style="margin-top:8px;font-size:12px;color:#93c5fd"></div>';
+        host.insertBefore(box,host.firstChild);
+        Q('aiKeyV2').value=localStorage.getItem('tot_gemini_key')||'';
+        Q('totAIRewrite').onclick=window.totGeminiRewrite;
+        Q('totAITest').onclick=window.totGeminiTest;
+      }
+      if(!Q('totSlideCount')){
+        // If the controls were already inserted into the other tab, reuse them.
+      }
+    });
+    // Make a slide-count selector available globally even if only the URL tab is visible.
+    var sc=Q('slideCount');
+    if(!sc){
+      var target=Q('manual')||Q('url');
+      if(target){
+        sc=document.createElement('select');sc.id='slideCount';sc.style.display='none';
+        ['1','2','3','4'].forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;sc.appendChild(o)});
+        target.appendChild(sc);
+      }
+    }
+  }
+
+  function setAIStatus(t,ok){
+    var e=Q('totAIStatus');if(e){e.textContent=t;e.style.color=ok?'#86efac':'#fca5a5'}
+    status(t,ok?'success':'error');
+  }
+
+  window.totGeminiTest=async function(){
+    var k=(Q('aiKeyV2')&&Q('aiKeyV2').value.trim())||localStorage.getItem('tot_gemini_key')||'';
+    if(!k){setAIStatus('Enter your Gemini API key first.',false);return}
+    setAIStatus('Testing Gemini API…',true);
+    try{
+      var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-goog-api-key':k},
+        body:JSON.stringify({contents:[{parts:[{text:'Reply with exactly GEMINI_OK'}]}],generationConfig:{responseMimeType:'text/plain'}})
+      });
+      var d=await r.json();
+      if(!r.ok)throw Error((d.error&&d.error.message)||('HTTP '+r.status));
+      setAIStatus('✓ Gemini API connection is working.',true);
+    }catch(e){setAIStatus('Gemini API error: '+e.message,false)}
+  };
+
+  window.totGeminiRewrite=async function(){
+    var k=(Q('aiKeyV2')&&Q('aiKeyV2').value.trim())||localStorage.getItem('tot_gemini_key')||'';
+    var title=(Q('urlHeadline')&&Q('urlHeadline').value.trim())||(Q('manualHeadline')&&Q('manualHeadline').value.trim())||(Q('headline')&&Q('headline').value.trim());
+    var body=(Q('urlContent')&&Q('urlContent').value.trim())||(Q('manualContent')&&Q('manualContent').value.trim())||(Q('keyPoints')&&Q('keyPoints').value.trim())||(Q('summary')&&Q('summary').value.trim());
+    if(!k){setAIStatus('Paste your Gemini API key first.',false);return}
+    if(!title&&!body){setAIStatus('Add a headline or article content first.',false);return}
+    var n=parseInt((Q('totSlideCount')&&Q('totSlideCount').value)||4,10);n=Math.max(1,Math.min(4,n));
+    localStorage.setItem('tot_gemini_key',k);
+    if(Q('slideCount'))Q('slideCount').value=String(n);
+    setAIStatus('Gemini is rewriting the article and creating '+n+' slide(s)…',true);
+
+    var schema={
+      type:'OBJECT',
+      properties:{
+        headline:{type:'STRING'},
+        summary:{type:'STRING'},
+        keywords:{type:'ARRAY',items:{type:'STRING'}},
+        slides:{type:'ARRAY',items:{type:'OBJECT',properties:{
+          title:{type:'STRING'},text:{type:'STRING'}
+        },required:['title','text']}}
+      },
+      required:['headline','summary','keywords','slides']
+    };
+    var prompt=
+      'You are a professional digital newsroom editor and SEO copywriter.\n'+
+      'Rewrite the supplied article without changing factual meaning. Use ONLY information supplied. Never invent names, numbers, dates, quotes, locations, eligibility, salaries or claims.\n'+
+      'HEADLINE: Rewrite into a clear, searchable headline containing the most important factual search terms naturally. No clickbait.\n'+
+      'SUMMARY: Rewrite the content into a concise, readable news summary with natural related keywords. Do not keyword stuff.\n'+
+      'KEYWORDS: Return 5-10 search phrases actually supported by the article.\n'+
+      'SLIDES: Create EXACTLY '+n+' slides. Each slide must have a short title and 1-3 short sentences. Slide 1 should be the strongest hook; later slides should cover distinct facts; if there is only 1 slide, make it a complete social post. Do not repeat the same paragraph on every slide.\n'+
+      'Return JSON only.\n\nARTICLE HEADLINE:\n'+title+'\n\nARTICLE CONTENT:\n'+body.slice(0,30000);
+
+    try{
+      var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-goog-api-key':k},
+        body:JSON.stringify({
+          contents:[{parts:[{text:prompt}]}],
+          generationConfig:{
+            responseMimeType:'application/json',
+            responseSchema:schema,
+            maxOutputTokens:4000
+          }
+        })
+      });
+      var d=await r.json();
+      if(!r.ok)throw Error((d.error&&d.error.message)||('HTTP '+r.status));
+      var raw=d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts?
+        d.candidates[0].content.parts.map(function(x){return x.text||''}).join(''):'';
+      if(!raw)throw Error('Gemini returned no text. Check API key/quota.');
+      var j=JSON.parse(raw);
+      var slides=(j.slides||[]).slice(0,n);
+      if(!slides.length)throw Error('Gemini returned no slides.');
+
+      if(Q('manualHeadline'))Q('manualHeadline').value=j.headline||title;
+      if(Q('manualContent'))Q('manualContent').value=j.summary||body;
+      if(Q('urlHeadline'))Q('urlHeadline').value=j.headline||title;
+      if(Q('urlContent'))Q('urlContent').value=j.summary||body;
+      if(Q('headline'))Q('headline').value=j.headline||title;
+      if(Q('summary'))Q('summary').value=j.summary||body;
+      if(Q('keyPoints'))Q('keyPoints').value=slides.map(function(s){return s.title+' — '+s.text}).join('\n');
+
+      window.totPlan=slides.map(function(s){return {title:s.title,text:s.text}});
+      if(Q('totKeywords'))Q('totKeywords').textContent='Search keywords: '+(j.keywords||[]).join(' • ');
+
+      // Use the existing stable slide renderer; AI supplies the content only.
+      if(typeof generateFromManualV2==='function' && Q('manualHeadline')){
+        generateFromManualV2();
+      }else{
+        if(typeof generateSlides==='function')generateSlides();
+      }
+      setAIStatus('✓ AI rewrite + slide creation complete.',true);
+    }catch(e){
+      console.error(e);
+      setAIStatus('AI failed: '+e.message,false);
+    }
+  };
+
+  // Keep the old button functional if it exists.
+  window.aiStoryV2=window.totGeminiRewrite;
+  ensureControls();
+  setTimeout(ensureControls,500);
+  setTimeout(ensureControls,1500);
+})();
+</script>
 </body>
 </html>
