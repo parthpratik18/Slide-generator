@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>News Slides Creator</title>
+<style>
+* {margin:0;padding:0;box-sizing:border-box;}
+body {font-family:Arial,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px;}
+.container {max-width:1000px;margin:0 auto;}
+.header {text-align:center;color:white;margin-bottom:30px;}
+.header h1 {font-size:2.5em;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,0.2);}
+.header p {font-size:1.1em;opacity:0.95;}
+.card {background:white;border-radius:15px;padding:25px;box-shadow:0 10px 40px rgba(0,0,0,0.2);margin-bottom:30px;}
+.card h2 {color:#667eea;margin-bottom:20px;font-size:1.5em;}
+.input-group {margin-bottom:15px;}
+.input-group label {display:block;color:#555;font-weight:600;margin-bottom:8px;font-size:0.95em;}
+input[type="text"],textarea {width:100%;padding:12px 15px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;font-family:inherit;transition:all 0.3s;}
+input[type="text"]:focus,textarea:focus {outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,0.1);}
+textarea {resize:vertical;min-height:100px;}
+button {width:100%;padding:12px 20px;border:none;border-radius:8px;font-size:1em;font-weight:600;cursor:pointer;transition:all 0.3s;margin-top:10px;}
+.btn-primary {background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;}
+.btn-primary:hover {transform:translateY(-2px);box-shadow:0 10px 25px rgba(102,126,234,0.4);}
+.status {padding:15px;border-radius:8px;margin-bottom:20px;display:none;}
+.status.success {background:#d4edda;color:#155724;border-left:4px solid #28a745;}
+.status.error {background:#f8d7da;color:#721c24;border-left:4px solid #f5222d;}
+.status.info {background:#d1ecf1;color:#0c5460;border-left:4px solid #17a2b8;}
+.format-selector {display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:15px;}
+.format-btn {padding:12px;border:2px solid #e0e0e0;background:white;border-radius:8px;cursor:pointer;transition:all 0.3s;text-align:center;font-weight:600;color:#555;}
+.format-btn.active {border-color:#667eea;background:rgba(102,126,234,0.1);color:#667eea;}
+.slides-grid {display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:15px;margin-top:20px;}
+.slide-item {position:relative;border-radius:8px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.1);cursor:pointer;transition:all 0.3s;}
+.slide-item:hover {transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,0.15);}
+.slide-item canvas {width:100%;height:100%;display:block;}
+.slide-label {position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);color:white;padding:5px;text-align:center;font-size:12px;font-weight:600;}
+.download-grid {display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px;}
+.btn-download {background:#28a745;color:white;padding:10px;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;transition:all 0.3s;}
+.btn-download:hover {background:#218838;transform:translateY(-2px);}
+.tabs {display:flex;gap:10px;margin-bottom:20px;border-bottom:2px solid #e0e0e0;}
+.tab-btn {padding:12px 20px;background:none;border:none;border-bottom:3px solid transparent;color:#555;font-weight:600;cursor:pointer;transition:all 0.3s;}
+.tab-btn.active {color:#667eea;border-bottom-color:#667eea;}
+.tab-content {display:none;}
+.tab-content.active {display:block;}
+.info-box {background:#e7f3ff;border-left:4px solid #2196F3;padding:15px;border-radius:6px;margin-bottom:15px;font-size:13px;color:#0c5460;}
+.channel-settings {background:#fff3cd;border-left:4px solid #ffc107;padding:15px;border-radius:6px;margin-bottom:15px;}
+.channel-settings h3 {color:#856404;margin-bottom:10px;}
+@media (max-width:600px) {.download-grid {grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>News Slides Creator</h1>
+<p>Create beautiful YouTube and Instagram slides with your channel branding</p>
+</div>
+
+<div class="card">
+<div class="tabs">
+<button class="tab-btn active" onclick="switchTab('settings')">Settings</button>
+<button class="tab-btn" onclick="switchTab('create')">Create Slides</button>
+<button class="tab-btn" onclick="switchTab('preview')">Preview</button>
+<button class="tab-btn" onclick="switchTab('download')">Download</button>
+</div>
+
+<div id="settings" class="tab-content active">
+<div class="channel-settings">
+<h3>Configure Your Channel Branding</h3>
+<p style="color:#666;margin-bottom:15px;">Settings will appear on the first slide</p>
+</div>
+
+<div id="statusSettings"></div>
+
+<div class="input-group">
+<label for="channelLogo">Channel Logo (Emoji)</label>
+<input type="text" id="channelLogo" placeholder="e.g. emoji" value="📰" maxlength="2">
+</div>
+
+<div class="input-group">
+<label for="channelName">Channel Name</label>
+<input type="text" id="channelName" placeholder="Channel Name" value="My News Channel">
+</div>
+
+<div class="input-group">
+<label for="channelTagline">Channel Tagline</label>
+<input type="text" id="channelTagline" placeholder="Tagline" value="Daily News Updates">
+</div>
+
+<div class="input-group">
+<label for="subscribeText">Subscribe Button Text</label>
+<input type="text" id="subscribeText" placeholder="SUBSCRIBE NOW" value="SUBSCRIBE NOW">
+</div>
+
+<div class="input-group">
+<label for="followText">Follow Text</label>
+<input type="text" id="followText" placeholder="Follow text" value="Follow Us On">
+</div>
+
+<button class="btn-primary" onclick="saveChannelSettings()">Save Settings</button>
+</div>
+
+<div id="create" class="tab-content">
+<div class="info-box">Enter news content. First slide will include your channel branding</div>
+
+<div id="statusCreate"></div>
+
+<div class="input-group">
+<label for="headline">News Headline</label>
+<input type="text" id="headline" placeholder="Headline" value="Breaking News Alert">
+</div>
+
+<div class="input-group">
+<label for="keyPoints">Key Points (one per line)</label>
+<textarea id="keyPoints">Latest technology news
+New AI discoveries
+Global market trends
+Expert analysis
+Today's updates</textarea>
+</div>
+
+<div class="input-group">
+<label for="summary">Summary</label>
+<textarea id="summary">Stay informed with latest news. Comprehensive overview of today headlines.</textarea>
+</div>
+
+<div class="input-group">
+<label>Choose Format</label>
+<div class="format-selector">
+<button class="format-btn active" onclick="setFormat('instagram')">Instagram Story - 1080x1920</button>
+<button class="format-btn" onclick="setFormat('youtube')">YouTube - 1280x720</button>
+</div>
+</div>
+
+<button class="btn-primary" onclick="generateSlides()">Generate Slides Now</button>
+</div>
+
+<div id="preview" class="tab-content">
+<div class="info-box">Click any slide to download it</div>
+<div id="previewContent"><p style="color:#999;text-align:center;padding:40px;">Generate slides first to see preview</p></div>
+</div>
+
+<div id="download" class="tab-content">
+<div class="info-box">Download your slides as PNG files</div>
+<div id="downloadContent"><p style="color:#999;text-align:center;padding:40px;">Generate slides first to download</p></div>
+</div>
+</div>
+</div>
+
+<script>
+var generatedSlides = [];
+var selectedFormat = 'instagram';
+var channelSettings = {
+logo: '📰',
+name: 'My News Channel',
+tagline: 'Daily News Updates',
+subscribeText: 'SUBSCRIBE NOW',
+followText: 'Follow Us On'
+};
+
+var colors = [
+{start:'#667eea',end:'#764ba2'},
+{start:'#f093fb',end:'#f5576c'},
+{start:'#4facfe',end:'#00f2fe'},
+{start:'#43e97b',end:'#38f9d7'},
+{start:'#fa709a',end:'#fee140'}
+];
+
+function saveChannelSettings() {
+channelSettings.logo = document.getElementById('channelLogo').value || '📰';
+channelSettings.name = document.getElementById('channelName').value || 'My News Channel';
+channelSettings.tagline = document.getElementById('channelTagline').value || 'Daily News Updates';
+channelSettings.subscribeText = document.getElementById('subscribeText').value || 'SUBSCRIBE NOW';
+channelSettings.followText = document.getElementById('followText').value || 'Follow Us On';
+showStatus('Settings saved successfully','success','statusSettings');
+}
+
+function setFormat(format) {
+selectedFormat = format;
+var btns = document.querySelectorAll('.format-btn');
+for(var i=0;i<btns.length;i++) btns[i].classList.remove('active');
+event.target.classList.add('active');
+}
+
+function switchTab(tab) {
+var contents = document.querySelectorAll('.tab-content');
+for(var i=0;i<contents.length;i++) contents[i].classList.remove('active');
+var btns = document.querySelectorAll('.tab-btn');
+for(var i=0;i<btns.length;i++) btns[i].classList.remove('active');
+document.getElementById(tab).classList.add('active');
+event.target.classList.add('active');
+}
+
+function showStatus(msg,type,elemId) {
+elemId = elemId || 'statusCreate';
+var st = document.getElementById(elemId);
+st.className = 'status '+type;
+st.textContent = msg;
+st.style.display = 'block';
+setTimeout(function(){st.style.display='none';},5000);
+}
+
+function generateSlides() {
+var headline = document.getElementById('headline').value.trim();
+var keyPointsText = document.getElementById('keyPoints').value.trim();
+var summary = document.getElementById('summary').value.trim();
+
+if(!headline || !keyPointsText) {
+showStatus('Fill in headline and key points','error');
+return;
+}
+
+var keyPoints = keyPointsText.split('\n').filter(function(p){return p.trim();}).slice(0,5);
+
+showStatus('Generating slides...','info');
+generatedSlides = [];
+
+setTimeout(function(){
+generatedSlides.push({
+type:'channel',
+title:channelSettings.name,
+tagline:channelSettings.tagline,
+logo:channelSettings.logo,
+subscribeText:channelSettings.subscribeText,
+followText:channelSettings.followText,
+color:colors[0]
+});
+
+keyPoints.slice(0,3).forEach(function(point,index){
+generatedSlides.push({
+type:'content',
+title:'Key Point '+(index+1),
+content:point,
+color:colors[index+1]
+});
+});
+
+generatedSlides.push({
+type:'content',
+title:'Summary',
+content:summary || 'Stay tuned for updates',
+color:colors[4]
+});
+
+displaySlides();
+showStatus('Slides generated. First slide has your branding','success');
+switchTab('preview');
+},500);
+}
+
+function displaySlides() {
+var previewContent = document.getElementById('previewContent');
+var downloadContent = document.getElementById('downloadContent');
+
+var slidesHTML = '<div class="slides-grid">';
+for(var i=0;i<generatedSlides.length;i++) {
+slidesHTML += '<div class="slide-item" onclick="downloadSlide('+i+')"><canvas id="canvas-'+i+'" style="width:100%;height:auto;"></canvas><div class="slide-label">Slide '+(i+1)+'/'+generatedSlides.length+'</div></div>';
+}
+slidesHTML += '</div><p style="text-align:center;margin-top:20px;color:#666;font-size:14px;">Click any slide to download</p>';
+previewContent.innerHTML = slidesHTML;
+
+var downloadHTML = '<div class="download-grid">';
+for(var i=0;i<generatedSlides.length;i++) {
+downloadHTML += '<button class="btn-download" onclick="downloadSlide('+i+')">Download Slide '+(i+1)+'</button>';
+}
+downloadHTML += '</div>';
+downloadContent.innerHTML = downloadHTML;
+
+for(var i=0;i<generatedSlides.length;i++) {
+drawSlide(i,generatedSlides[i]);
+}
+}
+
+function drawSlide(index,slide) {
+var canvas = document.getElementById('canvas-'+index);
+if(!canvas) return;
+
+var width = selectedFormat === 'instagram' ? 1080 : 1280;
+var height = selectedFormat === 'instagram' ? 1920 : 720;
+
+canvas.width = width;
+canvas.height = height;
+
+var ctx = canvas.getContext('2d');
+
+var gradient = ctx.createLinearGradient(0,0,width,height);
+gradient.addColorStop(0,slide.color.start);
+gradient.addColorStop(1,slide.color.end);
+
+ctx.fillStyle = gradient;
+ctx.fillRect(0,0,width,height);
+
+if(slide.type === 'channel') {
+drawChannelSlide(ctx,width,height,slide);
+} else {
+drawContentSlide(ctx,width,height,slide);
+}
+}
+
+function drawChannelSlide(ctx,width,height,slide) {
+ctx.font = (width > 800 ? 120 : 80)+'px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillStyle = 'white';
+ctx.fillText(slide.logo,width/2,height/3);
+
+ctx.font = 'bold '+(width > 800 ? 80 : 60)+'px Arial';
+ctx.fillStyle = 'white';
+ctx.fillText(slide.title,width/2,height/2.2);
+
+ctx.font = (width > 800 ? 40 : 30)+'px Arial';
+ctx.fillStyle = 'rgba(255,255,255,0.9)';
+ctx.fillText(slide.tagline,width/2,height/1.7);
+
+var btnY = height/1.3;
+ctx.fillStyle = 'rgba(255,255,255,0.2)';
+ctx.fillRect(width/2-250,btnY-40,500,80);
+ctx.strokeStyle = 'white';
+ctx.lineWidth = 3;
+ctx.strokeRect(width/2-250,btnY-40,500,80);
+
+ctx.font = 'bold '+(width > 800 ? 50 : 35)+'px Arial';
+ctx.fillStyle = 'white';
+ctx.textAlign = 'center';
+ctx.fillText('SUBSCRIBE '+slide.subscribeText.split(' ')[1],width/2,btnY+10);
+
+ctx.font = (width > 800 ? 35 : 25)+'px Arial';
+ctx.fillStyle = 'rgba(255,255,255,0.95)';
+ctx.fillText(slide.followText,width/2,height-200);
+
+ctx.font = (width > 800 ? 50 : 40)+'px Arial';
+var icons = ['PLAY','IMG','TWIT','TIKTOK'];
+var iconY = height-100;
+var iconSpacing = width/5;
+var startX = width/2-(iconSpacing*1.5);
+
+for(var i=0;i<icons.length;i++) {
+ctx.fillText(icons[i],startX+(i*iconSpacing),iconY);
+}
+}
+
+function drawContentSlide(ctx,width,height,slide) {
+ctx.fillStyle = 'white';
+ctx.font = 'bold '+(width > 800 ? 70 : 50)+'px Arial';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'top';
+
+var titleY = height/4;
+ctx.fillText(slide.title,width/2,titleY);
+
+ctx.font = (width > 800 ? 50 : 35)+'px Arial';
+var words = slide.content.split(' ');
+var lines = wrapText(words,width-100,ctx);
+var contentY = height/2-(lines.length*60)/2;
+
+for(var i=0;i<lines.length;i++) {
+ctx.fillText(lines[i],width/2,contentY+(i*60));
+}
+
+ctx.font = (width > 800 ? 30 : 20)+'px Arial';
+ctx.fillStyle = 'rgba(255,255,255,0.7)';
+ctx.textAlign = 'right';
+ctx.fillText(generatedSlides.length,width-30,height-50);
+}
+
+function wrapText(words,maxWidth,ctx) {
+var lines = [];
+var currentLine = '';
+
+for(var i=0;i<words.length;i++) {
+var word = words[i];
+var testLine = currentLine + (currentLine ? ' ' : '') + word;
+var metrics = ctx.measureText(testLine);
+
+if(metrics.width > maxWidth && currentLine) {
+lines.push(currentLine);
+currentLine = word;
+} else {
+currentLine = testLine;
+}
+}
+
+if(currentLine) lines.push(currentLine);
+return lines;
+}
+
+function downloadSlide(index) {
+var canvas = document.getElementById('canvas-'+index);
+if(!canvas) return;
+
+var link = document.createElement('a');
+link.href = canvas.toDataURL('image/png');
+link.download = 'slide-'+(index+1)+'-'+selectedFormat+'.png';
+link.click();
+}
+
+window.addEventListener('load',function(){
+setTimeout(function(){generateSlides();},500);
+});
+</script>
+</body>
+</html>
