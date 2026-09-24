@@ -958,15 +958,29 @@ async function gemini(key,prompt){
 }
 
 async function groq(key,prompt){
- var body={model:'openai/gpt-oss-20b',messages:[{role:'system',content:prompt},{role:'user',content:'Open/read the source URL in the instructions and create the requested output.'}],temperature:0.25,max_completion_tokens:6000,
- tools:[{type:'browser_search'}],tool_choice:'required',
- response_format:{type:'json_schema',json_schema:{name:'carousel',strict:true,schema:schema()}}};
- var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify(body)});
- var d=await r.json();if(!r.ok)throw Error((d.error&&d.error.message)||('Groq HTTP '+r.status));
- var raw=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content;if(!raw)throw Error('Groq returned no content');
- return JSON.parse(raw);
+ var body={model:'openai/gpt-oss-20b',
+ messages:[
+  {role:'system',content:prompt+'\\nReturn ONLY valid JSON with keys headline, summary, keywords, slides. Each slide must contain title and text.'},
+  {role:'user',content:'Generate the requested JSON now.'}
+ ],
+ temperature:0.25,
+ max_completion_tokens:6000,
+ response_format:{type:'json_object'}
+ };
+ var r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+  method:'POST',
+  headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+  body:JSON.stringify(body)
+ });
+ var d=await r.json();
+ if(!r.ok)throw Error((d.error&&d.error.message)||('Groq HTTP '+r.status));
+ var raw=d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content;
+ if(!raw)throw Error('Groq returned no content');
+ var j;
+ try{j=JSON.parse(raw)}catch(e){throw Error('Groq returned invalid JSON')}
+ if(!j.slides||!Array.isArray(j.slides))throw Error('Groq JSON is missing slides');
+ return j;
 }
-
 function setFields(j,url){
  $('urlHeadline').value=j.headline||'';
  $('urlContent').value=j.summary||'';
