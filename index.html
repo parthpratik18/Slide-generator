@@ -837,5 +837,170 @@ setup();motionV2()
   addControls();setTimeout(addControls,400);setTimeout(addControls,1200);
 })();
 </script>
+
+<style id="totFinalFix">
+.tot-story-pills{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:700px){.tot-story-pills{grid-template-columns:1fr 1fr}}
+#totAIHelp{font-size:12px;line-height:1.5;color:#cbd5e1;margin-top:8px}
+#totAIStatus{margin-top:8px;padding:8px 10px;border-radius:7px;display:none}
+</style>
+<script>
+(function(){
+  function E(id){return document.getElementById(id)}
+  function msg(t,ok){var e=E('totAIStatus');if(e){e.textContent=t;e.style.display='block';e.style.background=ok?'#052e16':'#450a0a';e.style.color=ok?'#bbf7d0':'#fecaca'}}
+
+  function installFinalUI(){
+    var m=E('manual');if(!m)return;
+    var pills=document.querySelector('.tot-story-pills');
+    if(pills){
+      pills.innerHTML='<button type="button" class="tot-story-pill active" data-type="breaking">🚨 Breaking News</button><button type="button" class="tot-story-pill" data-type="jobs">💼 Job Vacancy</button><button type="button" class="tot-story-pill" data-type="facts">💡 Facts</button><button type="button" class="tot-story-pill" data-type="story">📰 News Story</button>';
+      pills.querySelectorAll('button').forEach(function(b){b.onclick=function(){pills.querySelectorAll('button').forEach(function(x){x.classList.remove('active')});b.classList.add('active');window.totStoryType=b.dataset.type}});
+    }
+    var sc=E('slideCount');
+    if(sc){sc.innerHTML='<option value="1">1 Slide</option><option value="2">2 Slides</option><option value="3">3 Slides</option><option value="4" selected>4 Slides</option>';}
+    var ai=E('aiV2');
+    if(ai&&!E('totAIStatus')){
+      var p=ai.querySelector('p');if(p)p.innerHTML='AI rewrites the headline + story for search-friendly keywords, then creates up to 4 slides.';
+      var help=document.createElement('div');help.id='totAIHelp';help.innerHTML='How it works: enter your Gemini API key → extract/paste article → click <b>Rewrite + Create Slides</b>. The AI keeps the article facts and improves wording, SEO keywords and slide structure.';
+      ai.appendChild(help);
+      var st=document.createElement('div');st.id='totAIStatus';ai.appendChild(st);
+      var b=ai.querySelector('button');if(b){b.textContent='✦ Rewrite + Create Slides';b.onclick=window.aiStoryV2}
+      var test=document.createElement('button');test.type='button';test.className='btn-secondary';test.style.marginTop='8px';test.textContent='Test Gemini Connection';test.onclick=window.testGeminiConnection;ai.appendChild(test);
+    }
+    var key=E('aiKeyV2');if(key&&!key.dataset.bound){key.dataset.bound='1';key.addEventListener('input',function(){localStorage.setItem('tot_gemini_key',key.value.trim())})}
+  }
+
+  window.testGeminiConnection=async function(){
+    var k=(E('aiKeyV2')&&E('aiKeyV2').value.trim())||localStorage.getItem('tot_gemini_key')||'';
+    if(!k){msg('Paste your Gemini API key first.',false);return}
+    msg('Testing Gemini 3.8 Flash…',true);
+    try{
+      var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':k},body:JSON.stringify({contents:[{parts:[{text:'Reply with exactly: GEMINI_OK'}]}],generationConfig:{responseMimeType:'text/plain'}})});
+      var d=await r.json();if(!r.ok)throw Error((d.error&&d.error.message)||('HTTP '+r.status));
+      msg('✓ Gemini connection works. You can generate the rewrite now.',true);
+    }catch(e){msg('Gemini error: '+e.message,false)}
+  };
+
+  window.aiStoryV2=async function(){
+    var k=(E('aiKeyV2')&&E('aiKeyV2').value.trim())||localStorage.getItem('tot_gemini_key')||'';
+    var title=(E('urlHeadline')&&E('urlHeadline').value.trim())||(E('manualHeadline')&&E('manualHeadline').value.trim());
+    var body=(E('urlContent')&&E('urlContent').value.trim())||(E('manualContent')&&E('manualContent').value.trim());
+    if(!k){msg('Paste your Gemini API key first.',false);return}
+    if(!title&&!body){msg('Extract an article URL or paste the headline/content first.',false);return}
+    localStorage.setItem('tot_gemini_key',k);
+    var type=window.totStoryType||'breaking';
+    var count=Math.max(1,Math.min(4,parseInt((E('slideCount')&&E('slideCount').value)||4,10)||4));
+    msg('Gemini is rewriting the story and building '+count+' slide(s)…',true);
+    var prompt=[
+      'You are a professional Indian digital newsroom editor and SEO copywriter.',
+      'Rewrite the supplied article for a social news post.',
+      'IMPORTANT: use ONLY facts present in the supplied material. Never invent names, dates, numbers, quotes, eligibility, deadlines or claims.',
+      'Create a concise, searchable headline using important factual keywords people may search for. Do not use clickbait.',
+      'Create a concise SEO-friendly summary with natural keywords, but do not keyword-stuff.',
+      'Create exactly '+count+' slides.',
+      'Selected visual style: '+type+'.',
+      'For news story slides, choose a simple 2D character role/pose that matches the story when appropriate: reporter, citizen, student, worker, officer, doctor, teacher, traveler, etc.',
+      'For job vacancy slides, prioritize vacancy name, organization, posts, eligibility, dates, salary if supplied, application method and source.',
+      'For breaking news, prioritize what happened, where, when and the key consequence.',
+      'For facts, prioritize the factual claim, number/statistic and explanation.',
+      'Return ONLY valid JSON with this schema:',
+      '{"headline":"...","summary":"...","keywords":["..."],"slides":[{"title":"...","text":"...","character":"reporter|citizen|student|worker|officer|doctor|teacher|traveler|none","number":"01"}],"caption":"..."}',
+      'Headline max about 90 characters. Each slide title max 70 characters. Each slide text max 280 characters.',
+      'Article headline: '+title,
+      'Article content: '+body.slice(0,30000)
+    ].join('\n');
+    try{
+      var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',{
+        method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':k},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:0.35}})
+      });
+      var d=await r.json();
+      if(!r.ok)throw Error((d.error&&d.error.message)||('HTTP '+r.status));
+      var raw=(d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts||[]).map(function(x){return x.text||''}).join('').trim();
+      raw=raw.replace(/^\`\`\`json\s*/,'').replace(/^\`\`\`\s*/,'').replace(/\s*\`\`\`$/,'').trim();
+      var j=JSON.parse(raw);
+      window.totPlan=(j.slides||[]).slice(0,count).map(function(s,i){return {title:s.title,text:s.text,number:String(i+1).padStart(2,'0'),character:s.character||'none'}});
+      if(E('manualHeadline'))E('manualHeadline').value=j.headline||title;
+      if(E('manualContent'))E('manualContent').value=j.summary||body;
+      if(E('seoKeywords'))E('seoKeywords').value=(j.keywords||[]).join(', ');
+      generateFromManualV2();
+      msg('✓ AI rewrite complete. Search keywords and slide story are ready.',true);
+    }catch(e){
+      console.error(e);
+      msg('AI failed: '+e.message+'. Click “Test Gemini Connection” to diagnose the API key/model.',false);
+    }
+  };
+
+  // Replace the final renderer with clean, readable category designs.
+  function round(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+  function wrap(c,s,maxW,maxLines){var a=String(s||'').replace(/\s+/g,' ').trim().split(' '),o=[],l='';for(var i=0;i<a.length;i++){var z=l?l+' '+a[i]:a[i];if(c.measureText(z).width>maxW&&l){o.push(l);l=a[i];if(o.length>=maxLines-1)break}else l=z}if(l&&o.length<maxLines)o.push(l);return o}
+  function font(c,s,max,start,min){for(var z=start;z>=min;z-=2){c.font='900 '+z+'px Arial';if(c.measureText(s).width<=max)return z}return min}
+  function cover(c,img,x,y,w,h){var r=img.width/img.height,b=w/h,sw=img.width,sh=img.height,sx=0,sy=0;if(r>b){sw=img.height*b;sx=(img.width-sw)/2}else{sh=img.width/b;sy=(img.height-sh)/2}c.drawImage(img,sx,sy,sw,sh,x,y,w,h)}
+  function masked(c,img,x,y,w,h,r){c.save();round(c,x,y,w,h,r);c.clip();cover(c,img,x,y,w,h);c.restore()}
+  function stick(c,x,y,s,role){c.save();c.translate(x,y);c.strokeStyle='#111827';c.fillStyle='#111827';c.lineWidth=Math.max(3,s*.035);c.lineCap='round';c.beginPath();c.arc(0,-s*.4,s*.13,0,Math.PI*2);c.stroke();c.beginPath();c.moveTo(0,-s*.27);c.lineTo(0,s*.08);c.moveTo(0,-s*.18);c.lineTo(-s*.22,s*.02);c.moveTo(0,-s*.18);c.lineTo(s*.22,s*.02);c.moveTo(0,s*.08);c.lineTo(-s*.18,s*.38);c.moveTo(0,s*.08);c.lineTo(s*.18,s*.38);c.stroke();c.font='700 '+Math.max(12,s*.12)+'px Arial';c.textAlign='center';c.fillText(role==='none'?'':role.toUpperCase(),0,s*.57);c.restore()}
+  function siren(c,x,y,s){c.fillStyle='#ef233c';round(c,x-s*.4,y,s*.8,s*.18,s*.04);c.fill();c.beginPath();c.arc(x,y,s*.22,Math.PI,0);c.fill();c.strokeStyle='#ef233c';c.lineWidth=4;[[x-s*.5,y,x-s*.75,y-s*.18],[x+s*.5,y,x+s*.75,y-s*.18],[x-s*.55,y+s*.1,x-s*.8,y+s*.1],[x+s*.55,y+s*.1,x+s*.8,y+s*.1]].forEach(function(a){c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(a[2],a[3]);c.stroke()})}
+  function footer(c,w,h,bg,fg,accent,channel,cta){var fh=Math.max(64,h*.07),y=h-fh;c.fillStyle=bg;c.fillRect(0,y,w,fh);c.fillStyle=accent;c.fillRect(0,y,w*.2,5);c.fillStyle=fg;c.font='900 '+Math.max(12,w*.014)+'px Arial';c.textBaseline='middle';c.fillText(cta,Math.max(26,w*.045),y+fh*.55);c.textAlign='right';c.fillStyle=fg;c.font='700 '+Math.max(10,w*.01)+'px Arial';c.fillText(channel.toUpperCase(),w-Math.max(26,w*.045),y+fh*.55);c.textAlign='left'}
+
+  function render(cv,i,total,p){
+    var c=cv.getContext('2d'),w=cv.width,h=cv.height,type=window.totStoryType||'breaking',channel=(E('manualChannelName')&&E('manualChannelName').value)||'Your Channel',title=p.title||'Latest Update',txt=p.text||'',pad=Math.max(36,w*.055),head=Math.max(72,w*.075),last=i===total-1;
+    var dark=type==='breaking', bg=dark?'#05070b':type==='jobs'?'#ffffff':type==='facts'?'#f8fafc':'#ffffff', fg=dark?'#ffffff':'#111827', muted=dark?'#cbd5e1':'#475569', accent=type==='breaking'?'#ef233c':type==='jobs'?'#16a34a':type==='facts'?'#f59e0b':'#2563eb';
+    c.fillStyle=bg;c.fillRect(0,0,w,h);
+    c.fillStyle=accent;c.fillRect(0,0,7,head);
+    c.fillStyle=fg;c.font='900 '+Math.max(16,w*.02)+'px Arial';c.textBaseline='middle';c.fillText(channel.toUpperCase(),pad,head*.52);
+    c.textAlign='right';c.fillStyle=muted;c.font='700 '+Math.max(10,w*.01)+'px Arial';c.fillText((i+1)+' / '+total,w-pad,head*.52);c.textAlign='left';
+    var y=head+pad;
+
+    if(type==='breaking'){
+      c.fillStyle=accent;c.font='900 '+Math.max(14,w*.017)+'px Arial';c.fillText('🚨 BREAKING NEWS',pad,y+18);siren(c,w-pad*1.3,y+8,Math.min(70,w*.08));
+      var ih=h*.30,iy=y+55;
+      if(window.totBg)masked(c,window.totBg,pad,iy,w-pad*2,ih,30);else{c.fillStyle='#151922';round(c,pad,iy,w-pad*2,ih,30);c.fill()}
+      c.fillStyle='#fff';c.font='900 '+font(c,title,w-pad*2-30,Math.min(64,w*.062),24)+'px Arial';var tl=wrap(c,title,w-pad*2-30,4);tl.forEach(function(s,n){c.fillText(s,pad+15,iy+ih+55+n*Math.min(65,w*.062))});
+      c.fillStyle=muted;c.font='500 '+Math.max(16,w*.019)+'px Arial';var by=iy+ih+78+tl.length*Math.min(65,w*.062);wrap(c,txt,w-pad*2-20,4).forEach(function(s,n){c.fillText(s,pad+10,by+n*Math.max(27,w*.028))});
+      footer(c,w,h,'#080b12','#fff',accent,channel,'SUBSCRIBE • FOLLOW • SHARE');
+    } else if(type==='jobs'){
+      c.fillStyle=accent;c.font='900 '+Math.max(14,w*.017)+'px Arial';c.fillText('JOB VACANCY',pad,y+18);
+      c.fillStyle=fg;c.font='900 '+font(c,title,w*.78,Math.min(60,w*.058),24)+'px Arial';wrap(c,title,w*.78,3).forEach(function(s,n){c.fillText(s,pad,y+70+n*Math.min(62,w*.06))});
+      stick(c,w-pad*1.2,y+85,Math.min(145,w*.14),p.character||'worker');
+      var val=txt.split(/\n|•|\||;/).filter(Boolean);if(!val.length)val=[txt];
+      var cards=['VACANCY','ELIGIBILITY','IMPORTANT DATE','HOW TO APPLY'],yy=y+h*.25;
+      for(var j=0;j<Math.min(4,val.length);j++){c.fillStyle=j%2?'#f8fafc':'#ffffff';round(c,pad,yy,w-pad*2,Math.min(115,h*.105),16);c.fill();c.strokeStyle='#e2e8f0';c.stroke();c.fillStyle=accent;c.font='900 '+Math.max(10,w*.012)+'px Arial';c.fillText(cards[j],pad+20,yy+27);c.fillStyle=fg;c.font='700 '+Math.max(14,w*.016)+'px Arial';wrap(c,val[j].trim(),w-pad*2-40,2).forEach(function(s,n){c.fillText(s,pad+20,yy+58+n*Math.max(23,w*.024))});yy+=Math.min(135,h*.12)}
+      footer(c,w,h,'#111827','#fff',accent,channel,'FOLLOW FOR DAILY JOB UPDATES');
+    } else if(type==='facts'){
+      c.fillStyle=accent;c.font='900 '+Math.max(14,w*.017)+'px Arial';c.fillText('DID YOU KNOW?',pad,y+18);
+      c.fillStyle=accent;c.font='900 '+Math.min(h*.22,w*.25)+'px Arial';c.fillText(p.number||String(i+1).padStart(2,'0'),pad,y+h*.23);
+      c.fillStyle=fg;c.font='900 '+font(c,title,w-pad*2,Math.min(58,w*.055),23)+'px Arial';wrap(c,title,w-pad*2,4).forEach(function(s,n){c.fillText(s,pad,y+h*.31+n*Math.min(60,w*.058))});
+      c.fillStyle=muted;c.font='500 '+Math.max(16,w*.019)+'px Arial';wrap(c,txt,w-pad*2,6).forEach(function(s,n){c.fillText(s,pad,y+h*.52+n*Math.max(27,w*.029))});
+      footer(c,w,h,'#111827','#fff',accent,channel,'FOLLOW FOR MORE FACTS');
+    } else {
+      var ih=h*.34;
+      if(window.totBg){
+        if(last){c.save();c.globalAlpha=.78;masked(c,window.totBg,pad,y,w*.48,ih,26);c.restore();c.fillStyle='rgba(255,255,255,.72)';round(c,w*.43,y+h*.05,w*.52,ih*.8,24);c.fill();c.fillStyle=fg;c.font='900 '+font(c,title,w*.45,Math.min(52,w*.05),22)+'px Arial';wrap(c,title,w*.45,5).forEach(function(s,n){c.fillText(s,w*.48,y+h*.13+n*Math.min(54,w*.052))});stick(c,w*.76,y+ih*.72,Math.min(130,w*.13),p.character||'reporter')}
+        else {masked(c,window.totBg,pad,y,w-pad*2,ih,24);c.fillStyle='rgba(0,0,0,.35)';c.fillRect(pad,y,w-pad*2,ih)}
+      } else {c.fillStyle='#dbeafe';round(c,pad,y,w-pad*2,ih,24);c.fill()}
+      if(!last){c.fillStyle=accent;c.font='900 '+Math.max(12,w*.014)+'px Arial';c.fillText('NEWS STORY',pad,y+ih+35);c.fillStyle=fg;c.font='900 '+font(c,title,w-pad*2,Math.min(58,w*.055),23)+'px Arial';var tt=wrap(c,title,w-pad*2,4);tt.forEach(function(s,n){c.fillText(s,pad,y+ih+80+n*Math.min(60,w*.058))});c.fillStyle=muted;c.font='500 '+Math.max(16,w*.019)+'px Arial';var by=y+ih+105+tt.length*Math.min(60,w*.058);wrap(c,txt,w-pad*2,5).forEach(function(s,n){c.fillText(s,pad,by+n*Math.max(27,w*.029))});stick(c,w-pad*1.25,h*.68,Math.min(130,w*.13),p.character||'reporter')}
+      footer(c,w,h,'#111827','#fff',accent,channel,'SUBSCRIBE • FOLLOW • SHARE');
+    }
+  }
+
+  window.generateFromManualV2=function(){
+    var title=(E('manualHeadline')&&E('manualHeadline').value.trim())||(E('urlHeadline')&&E('urlHeadline').value.trim());
+    var body=(E('manualContent')&&E('manualContent').value.trim())||(E('urlContent')&&E('urlContent').value.trim());
+    if(!title||!body){alert('Add headline and content first.');return}
+    var n=Math.max(1,Math.min(4,parseInt((E('slideCount')&&E('slideCount').value)||4,10)||4));
+    var plans=window.totPlan&&window.totPlan.length?window.totPlan:[];
+    if(!plans.length)plans=Array.from({length:n},function(_,i){return {title:i===0?title:['Key Details','Important Information','Takeaway'][i-1]||title,text:body,number:String(i+1),character:(window.totStoryType==='story'?'reporter':window.totStoryType==='jobs'?'worker':'none')}})
+    generatedSlides=[];for(var i=0;i<n;i++){var p=plans[i]||plans[plans.length-1];generatedSlides.push({title:p.title||title,text:p.text||body,number:String(i+1).padStart(2,'0'),character:p.character||'none'})}
+    if(typeof displaySlides==='function')displaySlides();switchTab('preview');
+  };
+  window.generateFromManual=window.generateFromManualV2;
+  window.displaySlides=function(){
+    var p=E('previewContent'),d=E('downloadContent'),html='<div class="slides-grid">';
+    for(var i=0;i<generatedSlides.length;i++)html+='<div class="slide-item"><canvas id="canvas-'+i+'"></canvas><div class="slide-label">Slide '+(i+1)+'</div></div>';
+    html+='</div>';p.innerHTML=html;var dl='<div class="download-grid">';for(var j=0;j<generatedSlides.length;j++)dl+='<button class="btn-download" onclick="downloadSlide('+j+')">Download Slide '+(j+1)+'</button>';dl+='</div>';d.innerHTML=dl;
+    for(var k=0;k<generatedSlides.length;k++){var f=selectedFormat==='youtube'?[1280,720]:selectedFormat==='square'?[1080,1080]:selectedFormat==='portrait'?[1080,1350]:[1080,1920],cv=E('canvas-'+k);cv.width=f[0];cv.height=f[1];render(cv,k,generatedSlides.length,generatedSlides[k]);}
+  };
+  installFinalUI();setTimeout(installFinalUI,300);setTimeout(installFinalUI,1000);setTimeout(installFinalUI,1800);
+})();
+</script>
 </body>
 </html>
