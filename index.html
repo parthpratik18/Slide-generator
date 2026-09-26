@@ -427,7 +427,7 @@ async function readV2(){
  }catch(e){console.error(e);note('This site blocked extraction. Try the article URL again or paste text manually.','error')}
 }
 async function imageV2(u){
- try{var r=await fetch('https://images.weserv.nl/?url='+encodeURIComponent(u));var b=await r.blob();var fr=new FileReader();fr.onload=function(){var im=new Image();im.onload=function(){window.totBg=im};im.src=fr.result;q('urlImagePreview').src=fr.result;q('urlImagePreview').style.display='block'};fr.readAsDataURL(b)}catch(e){}
+ try{var r=await fetch('https://images.weserv.nl/?url='+encodeURIComponent(u));var b=await r.blob();var fr=new FileReader();fr.onload=function(){var data=fr.result;var im=new Image();im.onload=function(){window.totBg=im};im.src=data;localStorage.setItem('tot_url_bg',data);q('urlImagePreview').src=data;q('urlImagePreview').style.display='block'};fr.readAsDataURL(b)}catch(e){}
 }
 async function aiStoryV2(){
  var k=((q('aiKeyV2')&&q('aiKeyV2').value)||K).trim();if(!k)return note('Enter a Gemini API key.','error');localStorage.setItem('tot_gemini_key',k);K=k;
@@ -945,7 +945,7 @@ function schema(){
 function makePrompt(url,cat,lang,n){
  return 'You are the creative editorial director for a high-quality Indian social-media news channel. Source URL: '+url+'. CATEGORY='+cat+'. LANGUAGE='+lang+'. EXACTLY '+n+' SLIDES. '+
  'First rewrite the main headline and summary for natural search discoverability using factual keywords. Then create EXACTLY '+n+' DISTINCT social-media slides. Every slide must have: title=factual headline, text=short factual detail, hook=a punchy human social-media line, emotion=one of surprised|excited|shocked|thinking|happy|serious|pointing, visual=a short description of the visual/scene that a cartoon stickman or uploaded image should communicate. '+
- 'The writing must feel like a viral social carousel, NOT a PowerPoint. Use short punchy sentences, conversational hooks and strong hierarchy. Never repeat the same paragraph. '+
+ 'The output must look like a designed Instagram/Facebook news carousel, NOT a PowerPoint, article screenshot, white document, or text-only presentation. Use short punchy sentences, conversational hooks, strong visual hierarchy, large readable text, and meaningful visual composition. Never repeat the same paragraph. Every slide must have a clear visual subject occupying a large part of the canvas. '+
  'JOB VACANCY: make hooks conversational and slightly humorous without making false promises. Examples of tone: "12th pass ho? Toh ye vacancy dekho!" and "Zyada soch mat… pehle apply kar!". These are style examples only; adapt them to the actual vacancy. Slide sequence should normally be hook/attention, key eligibility or posts, important dates/fee/application details, then action/official application reminder. '+
  'NEWS STORY: use the uploaded/source photo prominently when available. Make it feel like a story card: short headline over/above the image, a strong colored text box, and visual storytelling. Do not turn it into a blank text page. '+
  'BREAKING NEWS: dramatic but factual; use a red BREAKING NEWS ribbon, siren-style visual, dark treatment and the uploaded image prominently. '+
@@ -1002,7 +1002,7 @@ function createSlides(j,cat,n){
  if(window.totPlan.length!==n)throw Error('AI returned '+window.totPlan.length+' slides; requested '+n+'.');
  generatedSlides=[];
  var logo=localStorage.getItem('tot_logo_v4')||'';
- var bg=localStorage.getItem('tot_bg_v4')||'';
+ var bg=localStorage.getItem('tot_bg_v4')||localStorage.getItem('tot_url_bg')||'';
  for(var i=0;i<n;i++){
    var s=window.totPlan[i]||{};
    generatedSlides.push({
@@ -1014,22 +1014,68 @@ function createSlides(j,cat,n){
  }
  displaySlides();switchTab('preview');
 }
+async function extractArticleForAI(url){
+ status('Reading the article…',true);
+ var r=await fetch('https://r.jina.ai/'+url);
+ if(!r.ok)throw Error('Could not read this URL (article reader returned '+r.status+').');
+ var t=await r.text();
+ if(!t||t.length<120)throw Error('The URL returned too little readable article text.');
+ var lines=t.split(/\\n/).map(function(x){return x.trim()}).filter(Boolean);
+ var title=lines.find(function(x){return /^#\\s+/.test(x)})||lines.find(function(x){return x.length>25&&x.length<220})||'News Update';
+ title=title.replace(/^#+\\s*/,'').trim();
+ var clean=t
+  .replace(/!\\[[^\\]]*\\]\\([^)]*\\)/g,' ')
+  .replace(/\\[([^\\]]+)\\]\\([^)]*\\)/g,'$1')
+  .replace(/https?:\\/\\/\\S+/g,' ')
+  .replace(/\\s+/g,' ')
+  .trim();
+ if(clean.length<200)throw Error('Article text could not be extracted from this URL.');
+ var imageMatch=t.match(/!\\[[^\\]]*\\]\\((https?:\\/\\/[^) ]+)/i);
+ if(imageMatch)await imageV2(imageMatch[1]);
+ $('urlHeadline').value=title.slice(0,500);
+ $('urlContent').value=clean.slice(0,30000);
+ $('urlResults').style.display='block';
+ return {title:title,body:clean.slice(0,30000)};
+}
+
+function normalizePlan(j,n){
+ var slides=Array.isArray(j.slides)?j.slides:[];
+ slides=slides.slice(0,n);
+ if(slides.length!==n)throw Error('AI returned '+slides.length+' slides; requested exactly '+n+'.');
+ return slides.map(function(s,i){
+  return {
+   title:String(s.title||'').trim(),
+   text:String(s.text||'').trim(),
+   hook:String(s.hook||s.title||'').trim(),
+   emotion:String(s.emotion||'serious').trim().toLowerCase(),
+   visual:String(s.visual||'').trim()
+  };
+ });
+}
+
 async function create(){
- var url=($('urlInput').value||'').trim();if(!url){status('Paste the URL first.',false);return}
- if(!/^https?:\/\//i.test(url))url='https://'+url;
+ var url=($('urlInput').value||'').trim();
+ if(!url){status('Paste the URL first.',false);return}
+ if(!/^https?:\\/\\//i.test(url))url='https://'+url;
  var cat=$('v4cat').value,lang=$('v4lang').value,n=parseInt($('v4count').value,10),provider=$('v4provider').value;
  var key=provider==='gemini'?$('v4gemini').value.trim():$('v4groq').value.trim();
  if(!key){status('Enter the '+(provider==='gemini'?'Gemini':'Groq')+' API key.',false);return}
  localStorage.setItem(provider==='gemini'?'tot_gemini_key':'tot_groq_key',key);
- status('AI is reading the URL and creating '+n+' '+cat+' slide(s)…',true);
  try{
-   var prompt=makePrompt(url,cat,lang,n),j=provider==='gemini'?await gemini(key,prompt):await groq(key,prompt);
-   setFields(j,url);
-   createSlides(j,cat,n);
-   status('✓ Done: '+n+' '+cat+' slide(s), '+lang+', with AI-rewritten headline/content.',true);
+  var article=await extractArticleForAI(url);
+  status((provider==='gemini'?'Gemini':'Groq')+' is rewriting the article and designing '+n+' '+cat+' slide(s)…',true);
+  var prompt=makePrompt(url,cat,lang,n)+
+   '\\n\\nSOURCE ARTICLE TITLE:\\n'+article.title+
+   '\\n\\nSOURCE ARTICLE TEXT:\\n'+article.body+
+   '\\n\\nIMPORTANT: You do NOT have to browse the URL. The article text above is the source. Use ONLY this supplied source text. Return EXACTLY '+n+' slides.';
+  var j=provider==='gemini'?await gemini(key,prompt):await groq(key,prompt);
+  j.slides=normalizePlan(j,n);
+  setFields(j,url);
+  createSlides(j,cat,n);
+  status('✓ Created exactly '+n+' '+cat+' slide(s) from the extracted article.',true);
  }catch(e){
-   console.error(e);
-   status('FAILED: '+e.message+' | If this URL cannot be read, paste its article text into the Manual tab.',false);
+  console.error(e);
+  status('FAILED: '+e.message+' | Try another URL or use the Manual tab.',false);
  }
 }
 
